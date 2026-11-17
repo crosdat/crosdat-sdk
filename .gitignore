@@ -1,0 +1,31 @@
+# Local AI context
+CLAUDE.local.md
+
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Local env files
+.env
+.env.local
+
+# Build outputs
+dist
+build
+
+# Turbo
+.turbo
+
+# Testing
+coverage
+
+# Debug
+npm-debug.log*
+
+# Misc
+.DS_Store
+*.pem
+
+# Git worktrees
+.worktrees/

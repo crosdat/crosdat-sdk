@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CROSDAT Clinical Embed — Vanilla HTML Example</title>
+  </head>
+  <body>
+    <main>
+      <h1>Paediatric Prescribing Workbench</h1>
+      <div id="prescriber-root"></div>
+    </main>
+
+    <script type="module">
+      import { mountClinicalEmbed } from '@crosdat/embed';
+
+      // 1. Fetch a short-lived DPoP-bound session token from YOUR backend
+      //    (never expose your `ck_live_*` API key in browser code).
+      const sessionRes = await fetch('/api/crosdat/embed-session', { method: 'POST' });
+      const { embedBaseUrl, sessionToken } = await sessionRes.json();
+
+      // 2. Mount the sandboxed, auto-resizing Dose Prescriber embed.
+      const handle = mountClinicalEmbed(document.getElementById('prescriber-root'), {
+        embedBaseUrl,
+        module: 'dose-prescriber',
+        sessionToken,
+        targetSlug: 'amoxicillin',
+        patientContext: {
+          ageDays: 910,
+          sex: 'FEMALE',
+          weightKg: 13.4,
+        },
+        appearance: {
+          theme: 'neutral-clinical',
+          variables: {
+            colorPrimary: '#0f766e',
+            borderRadius: '8px',
+          },
+        },
+        onClinicalOutput(prescription) {
+          console.log('Signed clinical output:', prescription);
+        },
+        onSafetyAlert(alert) {
+          console.warn('Clinical safety alert:', alert);
+        },
+      });
+
+      window.addEventListener('beforeunload', () => handle.unmount());
+    </script>
+  </body>
+</html>

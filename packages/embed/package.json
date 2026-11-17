@@ -1,0 +1,41 @@
+{
+  "name": "@crosdat/embed",
+  "version": "0.1.0",
+  "description": "Zero-framework Web Component and verified postMessage iframe bridge for CROSDAT runtime clinical embeds.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./frame": {
+      "source": "./src/frame.ts",
+      "types": "./dist/frame.d.ts",
+      "import": "./dist/frame.js",
+      "default": "./dist/frame.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@crosdat/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "jsdom": "^26.0.0",
+    "typescript": "5.9.2",
+    "vitest": "^3.0.7"
+  }
+}

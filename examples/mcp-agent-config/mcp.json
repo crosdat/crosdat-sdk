@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "crosdat-clinical": {
+      "command": "npx",
+      "args": ["-y", "@crosdat/mcp"],
+      "env": {
+        "CROSDAT_API_KEY": "ck_live_replace_with_your_server_key",
+        "CROSDAT_API_BASE_URL": "https://api.crosdat.com/api/v1"
+      }
+    }
+  }
+}

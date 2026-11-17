@@ -1,0 +1,14 @@
+packages:
+  - 'packages/*'
+
+# Refuse any package version published less than 7 days ago. Blocks the live
+# window of npm hijack attacks. Use minimumReleaseAgeExclude for hotfixes.
+minimumReleaseAge: 10080
+minimumReleaseAgeStrict: false
+
+# Reject transitive deps pulled from git+https or raw tarball URLs. Those
+# bypass the registry's audit and advisory pipeline entirely.
+blockExoticSubdeps: true
+
+allowBuilds:
+  esbuild: true

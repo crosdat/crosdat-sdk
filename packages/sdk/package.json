@@ -1,0 +1,43 @@
+{
+  "name": "@crosdat/sdk",
+  "version": "0.1.0",
+  "description": "Typed TypeScript HTTP, DPoP, and pluggable transport client for the CROSDAT Clinical Intelligence API.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./dpop": {
+      "source": "./src/dpop.ts",
+      "types": "./dist/dpop.d.ts",
+      "import": "./dist/dpop.js",
+      "default": "./dist/dpop.js"
+    },
+    "./types": {
+      "source": "./src/types.ts",
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js",
+      "default": "./dist/types.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "5.9.2",
+    "vitest": "^3.0.7"
+  }
+}
