@@ -92,29 +92,45 @@ function ClinicalModuleEmbedFrame<TOutput>({
       onError,
     });
     mountedRef.current = handle;
+    lastAppearanceJsonRef.current = mergedAppearance ? JSON.stringify(mergedAppearance) : undefined;
+    lastContextJsonRef.current = patientContext ? JSON.stringify(patientContext) : undefined;
+    lastOverridesJsonRef.current = effectiveOverrides ? JSON.stringify(effectiveOverrides) : undefined;
 
     return () => {
       handle.unmount();
       mountedRef.current = null;
+      lastAppearanceJsonRef.current = undefined;
+      lastContextJsonRef.current = undefined;
+      lastOverridesJsonRef.current = undefined;
     };
   }, [ctx.embedBaseUrl, ctx.sessionToken, module, targetSlug]);
 
+  const lastAppearanceJsonRef = useRef<string | undefined>(undefined);
+  const lastContextJsonRef = useRef<string | undefined>(undefined);
+  const lastOverridesJsonRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
-    if (mountedRef.current && mergedAppearance) {
-      mountedRef.current.updateAppearance(mergedAppearance);
-    }
+    if (!mountedRef.current || !mergedAppearance) return;
+    const serialized = JSON.stringify(mergedAppearance);
+    if (serialized === lastAppearanceJsonRef.current) return;
+    lastAppearanceJsonRef.current = serialized;
+    mountedRef.current.updateAppearance(mergedAppearance);
   }, [mergedAppearance]);
 
   useEffect(() => {
-    if (mountedRef.current && patientContext) {
-      mountedRef.current.updatePatientContext(patientContext);
-    }
+    if (!mountedRef.current || !patientContext) return;
+    const serialized = JSON.stringify(patientContext);
+    if (serialized === lastContextJsonRef.current) return;
+    lastContextJsonRef.current = serialized;
+    mountedRef.current.updatePatientContext(patientContext);
   }, [patientContext]);
 
   useEffect(() => {
-    if (mountedRef.current && effectiveOverrides) {
-      mountedRef.current.updateFacilityOverrides(effectiveOverrides);
-    }
+    if (!mountedRef.current || !effectiveOverrides) return;
+    const serialized = JSON.stringify(effectiveOverrides);
+    if (serialized === lastOverridesJsonRef.current) return;
+    lastOverridesJsonRef.current = serialized;
+    mountedRef.current.updateFacilityOverrides(effectiveOverrides);
   }, [effectiveOverrides]);
 
   return <div ref={containerRef} className={className} data-crosdat-embed={module} />;
