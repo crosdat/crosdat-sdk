@@ -123,7 +123,16 @@ export function mountClinicalEmbed(
       : never
     : never;
 
+  let isFrameReady = false;
+  const pendingOutbound = new Map<HostToFrameMessageKind, OutboundHostBody>();
+
   const postToFrame = (msg: OutboundHostBody): void => {
+    if (!isFrameReady) {
+      // Queue until READY arrives so updates emitted during initial mount never
+      // hit an unnavigated about:blank iframe with a mismatched targetOrigin.
+      pendingOutbound.set(msg.kind, msg);
+      return;
+    }
     if (!iframe.contentWindow) return;
     const envelope = {
       ...msg,
@@ -144,6 +153,13 @@ export function mountClinicalEmbed(
 
     switch (data.kind) {
       case FrameToHostMessageKind.READY:
+        isFrameReady = true;
+        if (pendingOutbound.size > 0) {
+          for (const queued of pendingOutbound.values()) {
+            postToFrame(queued);
+          }
+          pendingOutbound.clear();
+        }
         if (typeof data.heightPx === 'number' && data.heightPx > 0) {
           iframe.style.height = `${Math.max(data.heightPx, options.minHeightPx ?? 420)}px`;
         }
@@ -194,6 +210,7 @@ export function mountClinicalEmbed(
       postToFrame({ kind: HostToFrameMessageKind.UPDATE_FACILITY_OVERRIDES, facilityOverrides });
     },
     unmount(): void {
+      pendingOutbound.clear();
       hostWindow.removeEventListener('message', onMessage);
       if (iframe.parentNode) {
         iframe.parentNode.removeChild(iframe);

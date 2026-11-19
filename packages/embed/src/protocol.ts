@@ -153,16 +153,32 @@ export function encodeBootstrapFragment(payload: EmbedBootstrapPayload): string 
 }
 
 /**
+ * In-memory cache of the consumed bootstrap payload keyed by the runtime `Window`
+ * instance and path+search so React StrictMode double-invocations on the same
+ * loaded iframe document receive the decoded payload even after `#crosdat=`
+ * has been scrubbed from `window.location.hash`.
+ */
+const consumedBootstrapByWindow = new WeakMap<
+  Window,
+  { pathKey: string; payload: EmbedBootstrapPayload }
+>();
+
+/**
  * Reads and decodes `#crosdat=...` from a window location hash and immediately
  * scrubs the hash from `window.history` so tokens do not linger in the address bar.
+ * Subsequent calls on the same `Window` and path (for example under React
+ * `StrictMode`) return the already-decoded in-memory payload without persisting
+ * credentials to Web Storage.
  *
  * @param win - Target `Window` inside the runtime embed iframe.
  * @returns Decoded {@link EmbedBootstrapPayload}, or `null` if no bootstrap hash is present.
  */
 export function consumeBootstrapFragment(win: Window = window): EmbedBootstrapPayload | null {
+  const pathKey = `${win.location?.pathname ?? ''}${win.location?.search ?? ''}`;
   const rawHash = win.location.hash;
   if (!rawHash || !rawHash.startsWith('#crosdat=')) {
-    return null;
+    const cached = consumedBootstrapByWindow.get(win);
+    return cached && cached.pathKey === pathKey ? cached.payload : null;
   }
   const token = rawHash.slice('#crosdat='.length);
   const normalized = token.replace(/-/g, '+').replace(/_/g, '/');
@@ -173,9 +189,10 @@ export function consumeBootstrapFragment(win: Window = window): EmbedBootstrapPa
     bytes[i] = binary.charCodeAt(i);
   }
   const parsed = JSON.parse(new TextDecoder().decode(bytes)) as EmbedBootstrapPayload;
+  consumedBootstrapByWindow.set(win, { pathKey, payload: parsed });
 
   if (win.history?.replaceState) {
-    win.history.replaceState(null, '', `${win.location.pathname}${win.location.search}`);
+    win.history.replaceState(null, '', pathKey);
   }
   return parsed;
 }

@@ -36,6 +36,13 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     expect(consumed?.sessionToken).toBe('tok_ephemeral_1');
     expect(consumed?.channelNonce).toBe('nonce-xyz-1');
     expect(window.location.hash).toBe('');
+
+    // Re-reading on the same path (e.g. React StrictMode double-mount) still returns the cached bootstrap
+    expect(consumeBootstrapFragment(window)?.sessionToken).toBe('tok_ephemeral_1');
+
+    // Navigating to another path clears lookup hit and requires a fresh #crosdat= hash
+    window.history.replaceState(null, '', '/embed/growth-chart');
+    expect(consumeBootstrapFragment(window)).toBeNull();
   });
 
   it('mounts sandboxed iframes, rejects spoofed origins/nonces, and delivers verified events', () => {
@@ -60,6 +67,10 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     );
     expect(mounted.iframe.getAttribute('referrerpolicy')).toBe('no-referrer');
     expect(mounted.iframe.src).toContain('https://embed.crosdat.com/growth-chart#crosdat=');
+
+    const postSpy = vi.spyOn(mounted.iframe.contentWindow!, 'postMessage');
+    mounted.updateAppearance({ theme: 'crosdat-dark' });
+    expect(postSpy).not.toHaveBeenCalled();
 
     // Spoofed origin must be ignored
     window.dispatchEvent(
@@ -106,6 +117,15 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     );
     expect(onReady).toHaveBeenCalledWith({ module: 'growth-chart', heightPx: 640 });
     expect(mounted.iframe.style.height).toBe('640px');
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(postSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: CROSDAT_EMBED_CHANNEL,
+        channelNonce: mounted.channelNonce,
+        kind: 'UPDATE_APPEARANCE',
+      }),
+      'https://embed.crosdat.com',
+    );
 
     window.dispatchEvent(
       new MessageEvent('message', {
