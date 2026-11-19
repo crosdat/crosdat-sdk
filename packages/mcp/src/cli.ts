@@ -9,7 +9,10 @@ import { createClinicalKnowledgeMcpServer, runMcpStdioServer } from './server.js
  * @param env - Process environment dictionary (defaults to `process.env`).
  * @returns Cleanup callback closing the stdio listener.
  */
-export function startCliMcpServer(env: NodeJS.ProcessEnv = process.env): () => void {
+export function startCliMcpServer(
+  env: NodeJS.ProcessEnv = process.env,
+  io?: Parameters<typeof runMcpStdioServer>[1],
+): () => void {
   const apiKey = env.CROSDAT_API_KEY;
   if (!apiKey) {
     process.stderr.write(
@@ -21,10 +24,9 @@ export function startCliMcpServer(env: NodeJS.ProcessEnv = process.env): () => v
   const client = createCrosdatClient({
     baseUrl,
     apiKey,
-    enableDpop: true,
   });
   const server = createClinicalKnowledgeMcpServer({ transport: client });
-  return runMcpStdioServer(server);
+  return runMcpStdioServer(server, io);
 }
 
 const isDirectExecution =
