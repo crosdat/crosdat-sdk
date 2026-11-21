@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark light" />
+    <link rel="icon" href="data:," />
     <title>crosdat vanilla HTML &amp; plain CSS host demo</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
@@ -66,6 +67,34 @@
           </div>
           <div id="vanilla-dose-root"></div>
         </div>
+        <div class="host-panel">
+          <div class="host-panel-head">
+            <h2>Web Component: &lt;crosdat-clinical-embed module="clinical-calculators"&gt;</h2>
+            <span class="host-badge">Vanilla Custom Element</span>
+          </div>
+          <div id="vanilla-calculators-root"></div>
+        </div>
+        <div class="host-panel">
+          <div class="host-panel-head">
+            <h2>Imperative DOM Mount: neonatal-tpn</h2>
+            <span class="host-badge">mountClinicalEmbed()</span>
+          </div>
+          <div id="vanilla-tpn-root"></div>
+        </div>
+        <div class="host-panel">
+          <div class="host-panel-head">
+            <h2>Web Component: &lt;crosdat-clinical-embed module="clinical-guide"&gt;</h2>
+            <span class="host-badge">Vanilla Custom Element</span>
+          </div>
+          <div id="vanilla-guide-root"></div>
+        </div>
+        <div class="host-panel">
+          <div class="host-panel-head">
+            <h2>Imperative DOM Mount: clinical-learning</h2>
+            <span class="host-badge">mountClinicalEmbed()</span>
+          </div>
+          <div id="vanilla-learning-root"></div>
+        </div>
       </section>
 
       <section class="host-panel">
@@ -74,9 +103,12 @@
           <div class="host-nav-pills">
             <button type="button" class="host-btn" data-http-probe="guidelines">Guidelines Search</button>
             <button type="button" class="host-btn" data-http-probe="calculators">List Calculators</button>
+            <button type="button" class="host-btn" data-http-probe="clerking">Evaluate Clerking</button>
+            <button type="button" class="host-btn" data-http-probe="growth">Evaluate Growth</button>
             <button type="button" class="host-btn" data-http-probe="dosing">Evaluate Dose</button>
             <button type="button" class="host-btn" data-http-probe="tpn">Evaluate TPN</button>
             <button type="button" class="host-btn" data-http-probe="cds">CDS Services</button>
+            <button type="button" class="host-btn" data-http-probe="smart">SMART Config</button>
           </div>
         </div>
         <pre class="host-code" id="vanilla-http-output">Loading HTTP medical content sample...</pre>

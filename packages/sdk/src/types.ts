@@ -615,6 +615,71 @@ export interface ClinicalLearningSessionView {
   patient: PatientClinicalContext;
   /** Initial presenting complaint slug. */
   complaintSlug: string;
+  /** Structured bedside hints exposed only during `PRACTICE` mode. */
+  practiceHints?: string[];
+  /** Post-review teaching pearls included in `PRACTICE` mode. */
+  teachingPearls?: string[];
+  /** Baseline bedside vitals recorded at scenario presentation. */
+  vitals?: Record<string, number | undefined>;
+  /** Initial history keys pre-revealed by the scenario. */
+  revealedHistoryKeys?: string[];
+  /** Initial physical exam keys pre-revealed by the scenario. */
+  revealedExamKeys?: string[];
+}
+
+// -- Runtime Embed Catalog Summaries ------------------------------------------
+
+/** LMS growth standard table keyed by standard id (`WHO_WEIGHT_FOR_AGE_BOYS_0_5Y`, etc.). */
+export type GrowthStandardsMap = Record<
+  string,
+  {
+    standardKey: string;
+    axes: string[];
+    data: Array<Record<string, number | string>>;
+    sources?: Array<{ id: string; citation?: string; title?: string; year?: number; section?: string }>;
+  }
+>;
+
+/** Presenting complaint metadata for structured clerking UIs. */
+export interface ClerkingComplaintSummary {
+  slug: string;
+  title: string;
+  category: string;
+  ageBands: string[];
+  keyQuestions: string[];
+  redFlagKeys: string[];
+  associatedSymptomKeys: string[];
+}
+
+/** Curated medication summary for interactive dose prescribers. */
+export interface DosingMedicationSummary {
+  key: string;
+  slug: string;
+  name: string;
+  genericName: string;
+  category: string;
+  defaultRoutes: string[];
+  defaultFrequencies: string[];
+  ageBands: string[];
+}
+
+/** Playbook / guideline catalog entry surfaced as browseable clinical hints. */
+export interface GuidelineCatalogEntry {
+  slug: string;
+  title: string;
+  category: string;
+  ageBands: string[];
+  summary: string;
+}
+
+/** Clinical learning OSCE scenario summary for station selection. */
+export interface ClinicalLearningScenarioSummary {
+  slug: string;
+  title: string;
+  difficulty: string;
+  ageBand: string;
+  specialty: string;
+  presentingComplaintSlug?: string;
 }
 
 /**
@@ -712,4 +777,14 @@ export interface ClinicalTransport {
   submitClinicalLearningAttempt(
     input: SubmitClinicalLearningAttemptInput,
   ): Promise<ClinicalLearningGradeReport>;
+  /** Lists WHO and CDC LMS growth chart standards bundled by the gateway. */
+  listGrowthStandards?(): Promise<GrowthStandardsMap>;
+  /** Lists structured presenting complaints for interactive clerking UIs. */
+  listClerkingComplaints?(): Promise<ClerkingComplaintSummary[]>;
+  /** Lists curated paediatric/neonatal medications for interactive dosing. */
+  listDosingMedications?(): Promise<DosingMedicationSummary[]>;
+  /** Lists curated clinical playbooks and guideline hints. */
+  listGuidelineCatalog?(): Promise<GuidelineCatalogEntry[]>;
+  /** Lists available OSCE clinical learning scenarios. */
+  listClinicalLearningScenarios?(): Promise<ClinicalLearningScenarioSummary[]>;
 }

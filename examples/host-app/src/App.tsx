@@ -147,7 +147,7 @@ export function App() {
       sex: BiologicalSex.FEMALE,
       weightKg: 13.4,
       heightCm: 92,
-      gestationalAgeWeeks: 39,
+      gestationalAgeDays: 273,
     }),
     [],
   );
@@ -265,8 +265,8 @@ export function App() {
                 onClick={() =>
                   void callHeadlessGateway('v1/clerking/evaluate', 'POST', {
                     patient: { ageDays: 910, sex: BiologicalSex.FEMALE },
-                    complaints: ['fever'],
-                    presentKeys: ['fever'],
+                    complaintSlugs: ['paediatric-fever'],
+                    presentKeys: ['FEVER'],
                     absentKeys: [],
                   })
                 }
@@ -294,9 +294,7 @@ export function App() {
                 onClick={() =>
                   void callHeadlessGateway('v1/growth/evaluate', 'POST', {
                     sex: BiologicalSex.FEMALE,
-                    ageDays: 910,
-                    weightKg: 13.4,
-                    heightCm: 92,
+                    measurements: [{ ageDays: 910, weightKg: 13.4, heightCm: 92 }],
                   })
                 }
               >
@@ -308,10 +306,17 @@ export function App() {
                 disabled={httpBusy}
                 onClick={() =>
                   void callHeadlessGateway('v1/tpn/evaluate', 'POST', {
-                    weightKg: 1.8,
-                    dayOfLife: 4,
-                    gestationalAgeWeeks: 32,
+                    patient: {
+                      ageDays: 4,
+                      sex: BiologicalSex.FEMALE,
+                      weightKg: 1.8,
+                      gestationalAgeDays: 224,
+                    },
                     accessRoute: 'CENTRAL',
+                    totalFluidMlPerKgDay: 120,
+                    targetGirMgKgMin: 8,
+                    aminoAcidsGPerKgDay: 3.0,
+                    lipidsGPerKgDay: 2.0,
                   })
                 }
               >
@@ -411,7 +416,7 @@ export function App() {
               </div>
               <NeonatalTpnEmbed
                 iframeTitle="Neonatal TPN"
-                patientContext={{ ageDays: 4, sex: BiologicalSex.FEMALE, weightKg: 1.8, gestationalAgeWeeks: 32 }}
+                patientContext={{ ageDays: 4, sex: BiologicalSex.FEMALE, weightKg: 1.8, gestationalAgeDays: 224 }}
                 minHeightPx={480}
                 onReady={(info) => pushEvent('react:ready', info.module, info)}
                 onOutput={(out) => pushEvent('react:output', 'neonatal-tpn', out)}
@@ -457,6 +462,7 @@ export function App() {
               <crosdat-clinical-embed
                 ref={wcRef}
                 embed-base-url={embedBaseUrl}
+                api-base-url={apiBaseUrl}
                 module="growth-chart"
                 session-token={sessionToken}
                 theme={theme}

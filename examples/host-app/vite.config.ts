@@ -126,7 +126,12 @@ function crosdatHostDemoPlugin(): Plugin {
             return;
           }
           const targetPath = req.url.replace(/^\/+/, '');
-          const upstreamUrl = `${hqGatewayBase()}/${targetPath}`;
+          const isRootWellKnown =
+            targetPath.startsWith('cds-services') || targetPath.startsWith('.well-known/');
+          const base = isRootWellKnown
+            ? hqGatewayBase().replace(/\/api$/i, '')
+            : hqGatewayBase();
+          const upstreamUrl = `${base}/${targetPath}`;
           const method = (req.method ?? 'GET').toUpperCase();
           const hasBody = method !== 'GET' && method !== 'HEAD';
           const bodyText = hasBody ? await readRequestBody(req) : undefined;

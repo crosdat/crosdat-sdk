@@ -28,6 +28,8 @@ export interface MountClinicalEmbedOptions {
   sessionToken: string;
   /** Optional calculator or clinical-learning scenario slug. */
   targetSlug?: string;
+  /** Optional API gateway base URL override (`https://api.example.com/api/v1`). */
+  apiBaseUrl?: string;
   /** Optional visual customisation tokens, theme preset, and white-label flag. */
   appearance?: AppearanceConfig;
   /** Optional de-identified patient biological context. */
@@ -105,6 +107,7 @@ export function mountClinicalEmbed(
     patientContext: options.patientContext,
     facilityOverrides: options.facilityOverrides,
     targetSlug: options.targetSlug,
+    apiBaseUrl: options.apiBaseUrl,
   });
 
   const iframe = container.ownerDocument.createElement('iframe');
@@ -228,6 +231,7 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
   public static get observedAttributes(): string[] {
     return [
       'embed-base-url',
+      'api-base-url',
       'module',
       'session-token',
       'target-slug',
@@ -298,6 +302,7 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
     }
     this.mounted = mountClinicalEmbed(this, {
       embedBaseUrl,
+      apiBaseUrl: this.getAttribute('api-base-url') ?? undefined,
       module,
       sessionToken,
       targetSlug: this.getAttribute('target-slug') ?? undefined,

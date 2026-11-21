@@ -77,6 +77,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
 
     const handle = mountClinicalEmbed(el, {
       embedBaseUrl: ctx.embedBaseUrl,
+      apiBaseUrl: ctx.apiBaseUrl,
       module,
       sessionToken: ctx.sessionToken,
       targetSlug,
@@ -103,7 +104,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
       lastContextJsonRef.current = undefined;
       lastOverridesJsonRef.current = undefined;
     };
-  }, [ctx.embedBaseUrl, ctx.sessionToken, module, targetSlug]);
+  }, [ctx.embedBaseUrl, ctx.apiBaseUrl, ctx.sessionToken, module, targetSlug]);
 
   const lastAppearanceJsonRef = useRef<string | undefined>(undefined);
   const lastContextJsonRef = useRef<string | undefined>(undefined);

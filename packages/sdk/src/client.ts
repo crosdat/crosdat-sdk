@@ -1,5 +1,6 @@
 import {
   createDpopKeyPair,
+  getOrCreateSessionDpopKeyPair,
   signDpopProof,
   type DpopKeyMaterial,
 } from './dpop.js';
@@ -8,17 +9,22 @@ import type {
   CalculatorEvaluationInput,
   CalculatorEvaluationResult,
   CalculatorSummary,
+  ClerkingComplaintSummary,
   ClinicalLearningGradeReport,
+  ClinicalLearningScenarioSummary,
   ClinicalLearningSessionView,
   ClinicalTransport,
   CreateEmbedSessionInput,
   DifferentialEvaluationResult,
   DoseEvaluationInput,
   DoseEvaluationResult,
+  DosingMedicationSummary,
   EmbedSessionCredentials,
   EvaluateDifferentialsInput,
   GrowthEvaluationInput,
   GrowthEvaluationResult,
+  GrowthStandardsMap,
+  GuidelineCatalogEntry,
   GuidelineSearchInput,
   GuidelineSearchResult,
   NeonatalTpnEvaluationInput,
@@ -111,17 +117,23 @@ export class HttpClinicalTransport implements ClinicalTransport {
    * @param token - Fresh JWT bearer token returned by session renewal.
    */
   public setSessionToken(token: string): void {
+    if (this.sessionToken !== token) {
+      this.dpopKeyPromise = undefined;
+    }
     this.sessionToken = token;
   }
 
   /**
-   * Returns the active WebCrypto DPoP key material, generating it lazily if needed.
+   * Returns the active WebCrypto DPoP key material, generating or reusing a
+   * session-scoped keypair if needed.
    *
    * @returns Non-extractable ECDSA P-256 keypair and RFC 7638 thumbprint.
    */
   public getOrCreateDpopKeyMaterial(): Promise<DpopKeyMaterial> {
     if (!this.dpopKeyPromise) {
-      this.dpopKeyPromise = createDpopKeyPair();
+      this.dpopKeyPromise = this.sessionToken
+        ? getOrCreateSessionDpopKeyPair(this.sessionToken)
+        : createDpopKeyPair();
     }
     return this.dpopKeyPromise;
   }
@@ -288,6 +300,31 @@ export class HttpClinicalTransport implements ClinicalTransport {
       input,
     );
   }
+
+  /** @inheritdoc */
+  public listGrowthStandards(): Promise<GrowthStandardsMap> {
+    return this.request<GrowthStandardsMap>('GET', '/growth/standards');
+  }
+
+  /** @inheritdoc */
+  public listClerkingComplaints(): Promise<ClerkingComplaintSummary[]> {
+    return this.request<ClerkingComplaintSummary[]>('GET', '/clerking/complaints');
+  }
+
+  /** @inheritdoc */
+  public listDosingMedications(): Promise<DosingMedicationSummary[]> {
+    return this.request<DosingMedicationSummary[]>('GET', '/dosing/medications');
+  }
+
+  /** @inheritdoc */
+  public listGuidelineCatalog(): Promise<GuidelineCatalogEntry[]> {
+    return this.request<GuidelineCatalogEntry[]>('GET', '/guidelines/catalog');
+  }
+
+  /** @inheritdoc */
+  public listClinicalLearningScenarios(): Promise<ClinicalLearningScenarioSummary[]> {
+    return this.request<ClinicalLearningScenarioSummary[]>('GET', '/clinical-learning/scenarios');
+  }
 }
 
 /**
@@ -368,6 +405,46 @@ export class CrosdatClient implements ClinicalTransport {
     input: SubmitClinicalLearningAttemptInput,
   ): Promise<ClinicalLearningGradeReport> {
     return this.transport.submitClinicalLearningAttempt(input);
+  }
+
+  /** Lists WHO and CDC LMS growth standards bundled on the gateway. */
+  public listGrowthStandards(): Promise<GrowthStandardsMap> {
+    if (!this.transport.listGrowthStandards) {
+      throw new Error('Active transport does not implement listGrowthStandards()');
+    }
+    return this.transport.listGrowthStandards();
+  }
+
+  /** Lists curated presenting complaints supported by interactive clerking embeds. */
+  public listClerkingComplaints(): Promise<ClerkingComplaintSummary[]> {
+    if (!this.transport.listClerkingComplaints) {
+      throw new Error('Active transport does not implement listClerkingComplaints()');
+    }
+    return this.transport.listClerkingComplaints();
+  }
+
+  /** Lists curated paediatric medications supported by dosing embeds. */
+  public listDosingMedications(): Promise<DosingMedicationSummary[]> {
+    if (!this.transport.listDosingMedications) {
+      throw new Error('Active transport does not implement listDosingMedications()');
+    }
+    return this.transport.listDosingMedications();
+  }
+
+  /** Lists curated clinical playbooks and guideline hints. */
+  public listGuidelineCatalog(): Promise<GuidelineCatalogEntry[]> {
+    if (!this.transport.listGuidelineCatalog) {
+      throw new Error('Active transport does not implement listGuidelineCatalog()');
+    }
+    return this.transport.listGuidelineCatalog();
+  }
+
+  /** Lists available OSCE clinical learning scenarios. */
+  public listClinicalLearningScenarios(): Promise<ClinicalLearningScenarioSummary[]> {
+    if (!this.transport.listClinicalLearningScenarios) {
+      throw new Error('Active transport does not implement listClinicalLearningScenarios()');
+    }
+    return this.transport.listClinicalLearningScenarios();
   }
 }
 

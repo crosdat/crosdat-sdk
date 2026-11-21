@@ -2,7 +2,7 @@
 
 Runnable host application demonstrating how an external hospital portal or EHR embeds **crosdat** clinical tools without touching crosdat internals:
 
-- **Vanilla HTML & Plain CSS (`/vanilla.html`)** — zero React or Tailwind; uses `<crosdat-clinical-embed>`, `mountClinicalEmbed()`, and plain `fetch()` calls against HQ Console `/api/v1/*`.
+- **Vanilla HTML & Plain CSS (`/vanilla.html`)** — zero React or Tailwind; mounts all 7 embed modules via `<crosdat-clinical-embed>` (`clerking`, `growth-chart`, `clinical-calculators`, `clinical-guide`) and `mountClinicalEmbed()` (`dose-prescriber`, `neonatal-tpn`, `clinical-learning`), plus plain `fetch()` calls against HQ Console `/api/v1/*`. Supports `?embedBaseUrl=...&apiBaseUrl=...` query overrides alongside `api-base-url` attributes when targeting custom hosts.
 - **React + Full SDK Suite (`/`)** — mounts all 7 embed modules (`ClerkingEmbed`, `GrowthChartEmbed`, `ClinicalCalculatorsEmbed`, `DosePrescriberEmbed`, `NeonatalTpnEmbed`, `ClinicalGuideEmbed`, `ClinicalLearningStationEmbed`) alongside the `<crosdat-clinical-embed>` Web Component and an interactive headless HTTP explorer.
 
 ## Running locally

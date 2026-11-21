@@ -180,6 +180,114 @@ export async function createDpopKeyPair(): Promise<DpopKeyMaterial> {
   };
 }
 
+const DPOP_IDB_NAME = 'crosdat-dpop-keys';
+const DPOP_IDB_STORE = 'session-keys';
+const inMemorySessionKeys = new Map<string, Promise<DpopKeyMaterial>>();
+
+async function hashSessionKeyId(sessionToken: string): Promise<string> {
+  const digest = await resolveSubtleCrypto().digest(
+    'SHA-256',
+    new TextEncoder().encode(sessionToken),
+  );
+  return encodeBase64Url(new Uint8Array(digest));
+}
+
+function openDpopKeyStore(): Promise<IDBDatabase | null> {
+  if (typeof globalThis.indexedDB === 'undefined') return Promise.resolve(null);
+  return new Promise((resolve) => {
+    try {
+      const req = globalThis.indexedDB.open(DPOP_IDB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(DPOP_IDB_STORE)) {
+          db.createObjectStore(DPOP_IDB_STORE);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function readIdbKey(db: IDBDatabase, keyId: string): Promise<DpopKeyMaterial | null> {
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(DPOP_IDB_STORE, 'readonly');
+      const req = tx.objectStore(DPOP_IDB_STORE).get(keyId);
+      req.onsuccess = () => {
+        const val = req.result as DpopKeyMaterial | undefined;
+        resolve(val?.privateKey && val?.publicJwk && val?.thumbprint ? val : null);
+      };
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function writeIdbKey(db: IDBDatabase, keyId: string, mat: DpopKeyMaterial): Promise<void> {
+  await new Promise<void>((resolve) => {
+    try {
+      const tx = db.transaction(DPOP_IDB_STORE, 'readwrite');
+      tx.objectStore(DPOP_IDB_STORE).put(mat, keyId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+/**
+ * Resolves or creates a non-extractable ECDSA P-256 DPoP keypair bound to a
+ * `sessionToken` across sibling embed frames on the same runtime origin via
+ * IndexedDB + Web Locks, falling back to an in-memory keypair outside browsers.
+ *
+ * @param sessionToken - Short-lived embed session JWT.
+ * @returns Deterministic per-session DPoP key material.
+ */
+export async function getOrCreateSessionDpopKeyPair(
+  sessionToken: string,
+): Promise<DpopKeyMaterial> {
+  const keyId = await hashSessionKeyId(sessionToken);
+  const existingMem = inMemorySessionKeys.get(keyId);
+  if (existingMem) return existingMem;
+
+  const task = (async (): Promise<DpopKeyMaterial> => {
+    const createAndPersist = async (): Promise<DpopKeyMaterial> => {
+      const db = await openDpopKeyStore();
+      if (db) {
+        try {
+          const existing = await readIdbKey(db, keyId);
+          if (existing) return existing;
+          const fresh = await createDpopKeyPair();
+          await writeIdbKey(db, keyId, fresh);
+          return fresh;
+        } finally {
+          db.close();
+        }
+      }
+      return createDpopKeyPair();
+    };
+
+    const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+    if (locks?.request) {
+      return locks.request(`crosdat-dpop-${keyId}`, createAndPersist);
+    }
+    return createAndPersist();
+  })();
+
+  inMemorySessionKeys.set(keyId, task);
+  try {
+    return await task;
+  } catch (err) {
+    inMemorySessionKeys.delete(keyId);
+    throw err;
+  }
+}
+
 /**
  * Signs a single-use RFC 9449 `dpop+jwt` proof binding the HTTP method, target
  * URL, timestamp, unique `jti`, and optional access-token hash (`ath`).

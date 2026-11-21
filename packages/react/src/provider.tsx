@@ -16,6 +16,8 @@ export interface CrosdatClinicalContextValue {
   client: CrosdatClient;
   /** Runtime embed host base URL (for example `https://embed.crosdat.com`). */
   embedBaseUrl: string;
+  /** Optional API gateway base URL passed to mounted embed frames. */
+  apiBaseUrl?: string;
   /** Active short-lived browser session token. */
   sessionToken: string;
   /** Default appearance configuration inherited by child embeds. */
@@ -71,6 +73,7 @@ export function CrosdatClinicalProvider(props: CrosdatClinicalProviderProps) {
     () => ({
       client: resolvedClient,
       embedBaseUrl: props.embedBaseUrl,
+      apiBaseUrl: props.apiBaseUrl,
       sessionToken: props.sessionToken,
       appearance: props.appearance,
       facilityOverrides: props.facilityOverrides,
@@ -79,6 +82,7 @@ export function CrosdatClinicalProvider(props: CrosdatClinicalProviderProps) {
     [
       resolvedClient,
       props.embedBaseUrl,
+      props.apiBaseUrl,
       props.sessionToken,
       props.appearance,
       props.facilityOverrides,

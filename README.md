@@ -55,6 +55,7 @@ export function PaediatricChart({ sessionToken }: { sessionToken: string }) {
   return (
     <CrosdatClinicalProvider
       embedBaseUrl="https://embed.crosdat.com"
+      apiBaseUrl="https://api.crosdat.com/api/v1"
       sessionToken={sessionToken}
       appearance={{
         theme: 'neutral-clinical',
@@ -91,7 +92,7 @@ export function PaediatricChart({ sessionToken }: { sessionToken: string }) {
 ## Available Embed Modules
 
 - `clerking` (`<ClerkingEmbed />`) — Structured paediatric and neonatal clerking, danger-sign triage, and ranked differentials.
-- `growth-chart` (`<GrowthChartEmbed />`) — Interactive WHO Child Growth (0–19 years) and Fenton Preterm (22–50 weeks) charts.
+- `growth-chart` (`<GrowthChartEmbed />`) — Interactive WHO Child Growth (0–19 years), CDC (2–20 years), and Fenton Preterm (22–50 weeks) charts (16 charts total).
 - `clinical-calculators` (`<ClinicalCalculatorsEmbed />`) — 34 deterministic bedside calculators (Apgar, Ballard, Downes, Silverman-Andersen, Blantyre, pSOFA, Schwartz eGFR, Holliday-Segar, Bhutani, and more).
 - `dose-prescriber` (`<DosePrescriberEmbed />`) — Weight-, age-, and indication-specific dosing, max-dose capping, continuous IV infusion recipes, ISMP Tall-Man lettering, and WHO AWaRe stewardship badges.
 - `neonatal-tpn` (`<NeonatalTpnEmbed />`) — Neonatal parenteral nutrition compounding, GIR, osmolarity, and calcium-phosphate safety checks.

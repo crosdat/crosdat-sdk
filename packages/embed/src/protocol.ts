@@ -61,6 +61,8 @@ export interface EmbedBootstrapPayload {
   facilityOverrides?: FacilityClinicalOverridesInput;
   /** Optional calculator or scenario slug when pinning a specific item. */
   targetSlug?: string;
+  /** Optional API gateway base URL override (`https://api.example.com/api/v1`). */
+  apiBaseUrl?: string;
 }
 
 /**
