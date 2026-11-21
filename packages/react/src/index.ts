@@ -1,6 +1,7 @@
 export {
   ClerkingEmbed,
   ClinicalCalculatorsEmbed,
+  ClinicalEvidenceAskEmbed,
   ClinicalGuideEmbed,
   ClinicalLearningStationEmbed,
   DosePrescriberEmbed,
@@ -8,6 +9,7 @@ export {
   NeonatalTpnEmbed,
   type BaseClinicalEmbedProps,
   type ClinicalCalculatorsEmbedProps,
+  type ClinicalEvidenceAskEmbedProps,
   type ClinicalGuideEmbedProps,
   type ClinicalLearningStationEmbedProps,
   type DosePrescriberEmbedProps,

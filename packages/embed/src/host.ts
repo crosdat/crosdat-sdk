@@ -1,5 +1,6 @@
 import type {
   AppearanceConfig,
+  ClinicalAiHostOptions,
   ClinicalFeedbackEvent,
   ClinicalSafetyAlert,
   EmbedModuleKind,
@@ -31,6 +32,8 @@ export interface MountClinicalEmbedOptions {
   targetSlug?: string;
   /** Optional API gateway base URL override (`https://api.example.com/api/v1`). */
   apiBaseUrl?: string;
+  /** Optional host AI integration options (`crosdat-cloud`, `custom-endpoint`, `host-callbacks`, or `disabled`). */
+  ai?: ClinicalAiHostOptions;
   /** Optional visual customisation tokens, theme preset, and white-label flag. */
   appearance?: AppearanceConfig;
   /** Optional de-identified patient biological context. */
@@ -111,6 +114,7 @@ export function mountClinicalEmbed(
     facilityOverrides: options.facilityOverrides,
     targetSlug: options.targetSlug,
     apiBaseUrl: options.apiBaseUrl,
+    ai: options.ai,
   });
 
   const iframe = container.ownerDocument.createElement('iframe');

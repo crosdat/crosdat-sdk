@@ -19,6 +19,7 @@ const embed = mountClinicalEmbed(document.getElementById('chart')!, {
   sessionToken,
   patientContext: { ageDays: 365, sex: 'FEMALE', weightKg: 8.9, heightCm: 73.2 },
   appearance: { theme: 'neutral-clinical' },
+  ai: { mode: 'crosdat-cloud', voiceEnabled: true, ambientEnabled: false },
   onClinicalOutput: (result) => console.log(result),
 });
 

@@ -1,5 +1,6 @@
 import type {
   AppearanceConfig,
+  ClinicalAiHostOptions,
   ClinicalFeedbackEvent,
   ClinicalSafetyAlert,
   EmbedModuleKind,
@@ -65,6 +66,8 @@ export interface EmbedBootstrapPayload {
   targetSlug?: string;
   /** Optional API gateway base URL override (`https://api.example.com/api/v1`). */
   apiBaseUrl?: string;
+  /** Optional host AI integration options controlling evidence Q&A and voice controls. */
+  ai?: ClinicalAiHostOptions;
 }
 
 /**

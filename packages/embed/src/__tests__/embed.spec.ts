@@ -264,4 +264,34 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     el.remove();
     expect(el.querySelector('iframe')).toBeNull();
   });
+
+  it('propagates ClinicalAiHostOptions through MountClinicalEmbedOptions into the #crosdat bootstrap payload', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const mounted = mountClinicalEmbed(container, {
+      embedBaseUrl: 'https://embed.crosdat.com',
+      module: EmbedModuleKind.EVIDENCE_ASK,
+      sessionToken: 'tok_evidence_1',
+      ai: {
+        mode: 'host-callbacks',
+        voiceEnabled: true,
+        ambientEnabled: false,
+      },
+    });
+
+    expect(mounted.iframe.src).toContain('https://embed.crosdat.com/evidence-ask#crosdat=');
+    const hashPart = mounted.iframe.src.slice(mounted.iframe.src.indexOf('#crosdat='));
+    window.history.replaceState(null, '', `/embed/evidence-ask${hashPart}`);
+    const decoded = consumeBootstrapFragment(window);
+    expect(decoded?.module).toBe('evidence-ask');
+    expect(decoded?.ai).toEqual({
+      mode: 'host-callbacks',
+      voiceEnabled: true,
+      ambientEnabled: false,
+    });
+
+    mounted.unmount();
+    container.remove();
+  });
 });

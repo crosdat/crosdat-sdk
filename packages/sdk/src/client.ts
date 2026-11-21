@@ -6,6 +6,8 @@ import {
 } from './dpop.js';
 import { CrosdatApiError } from './errors.js';
 import type {
+  AskClinicalEvidenceInput,
+  AskClinicalEvidenceResult,
   CalculatorEvaluationInput,
   CalculatorEvaluationResult,
   CalculatorSummary,
@@ -332,6 +334,13 @@ export class HttpClinicalTransport implements ClinicalTransport {
   public submitFeedback(input: SubmitEmbedFeedbackInput): Promise<SubmitEmbedFeedbackResult> {
     return this.request<SubmitEmbedFeedbackResult>('POST', '/feedback', input);
   }
+
+  /** @inheritdoc */
+  public askClinicalEvidence(
+    input: AskClinicalEvidenceInput,
+  ): Promise<AskClinicalEvidenceResult> {
+    return this.request<AskClinicalEvidenceResult>('POST', '/evidence/ask', input);
+  }
 }
 
 /**
@@ -412,6 +421,22 @@ export class CrosdatClient implements ClinicalTransport {
     input: SubmitClinicalLearningAttemptInput,
   ): Promise<ClinicalLearningGradeReport> {
     return this.transport.submitClinicalLearningAttempt(input);
+  }
+
+  /**
+   * Answers a clinical question with citation-locked curated guideline evidence
+   * via `POST /evidence/ask`.
+   *
+   * @param input - Clinical question, optional de-identified patient context, and overrides.
+   * @returns Citation-locked answer prose, inline citations, and deterministic tool outputs.
+   */
+  public askClinicalEvidence(
+    input: AskClinicalEvidenceInput,
+  ): Promise<AskClinicalEvidenceResult> {
+    if (!this.transport.askClinicalEvidence) {
+      throw new Error('Active transport does not implement askClinicalEvidence()');
+    }
+    return this.transport.askClinicalEvidence(input);
   }
 
   /** Lists WHO and CDC LMS growth standards bundled on the gateway. */

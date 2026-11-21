@@ -4,11 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ClinicalMcpToolName,
   MCP_PROTOCOL_VERSION,
+  SUPPORTED_MCP_PROTOCOL_VERSIONS,
   createClinicalKnowledgeMcpServer,
+  handleMcpHttpRequest,
   runMcpStdioServer,
 } from '../index.js';
 
-function createStubTransport(): ClinicalTransport {
+function createStubTransport(includeEvidence = true): ClinicalTransport {
   return {
     createEmbedSession: vi.fn(),
     evaluateDifferentials: vi.fn(async () => ({
@@ -81,19 +83,43 @@ function createStubTransport(): ClinicalTransport {
         },
       ],
     })),
+    ...(includeEvidence
+      ? {
+          askClinicalEvidence: vi.fn(async (input) => ({
+            status: 'ANSWERED' as const,
+            answerMarkdown: `Parenteral artesunate is recommended for ${input.question} [1].`,
+            citations: [
+              {
+                footnoteIndex: 1,
+                passageId: 'who-malaria-p42',
+                sourceId: 'who-malaria',
+                title: 'WHO Guidelines for Malaria',
+                excerpt: 'Parenteral artesunate 3.0 mg/kg for children < 20 kg.',
+                pageNumber: 42,
+              },
+            ],
+            deterministicToolResults: [],
+            contentVersion: '2026.11.0',
+            modelId: 'crosdat-evidence-v1',
+            topEvidenceScore: 0.95,
+            latencyMs: 120,
+          })),
+        }
+      : {}),
     startClinicalLearningSession: vi.fn(),
     submitClinicalLearningAttempt: vi.fn(),
   };
 }
 
 describe('@crosdat/mcp clinical knowledge server and composition', () => {
-  it('registers all 6 clinical knowledge tools and supports .registerTool(...) composition', async () => {
+  it('registers all 7 clinical knowledge tools and supports .registerTool(...) composition', async () => {
     const transport = createStubTransport();
     const server = createClinicalKnowledgeMcpServer({ transport });
 
     const initialTools = server.listTools().map((t) => t.name);
     expect(initialTools).toEqual([
       ClinicalMcpToolName.SEARCH_GUIDELINES,
+      ClinicalMcpToolName.ASK_CLINICAL_EVIDENCE,
       ClinicalMcpToolName.EVALUATE_TRIAGE_AND_DIFFERENTIALS,
       ClinicalMcpToolName.CALCULATE_PAEDIATRIC_DOSE,
       ClinicalMcpToolName.CALCULATE_NEONATAL_TPN,
@@ -110,7 +136,7 @@ describe('@crosdat/mcp clinical knowledge server and composition', () => {
       }),
     });
 
-    expect(server.listTools()).toHaveLength(7);
+    expect(server.listTools()).toHaveLength(8);
     expect(() =>
       server.registerTool({
         name: 'custom_domain_tool',
@@ -130,8 +156,27 @@ describe('@crosdat/mcp clinical knowledge server and composition', () => {
       calculatedSingleDose: 36,
     });
 
+    const evidenceRes = await server.callTool(ClinicalMcpToolName.ASK_CLINICAL_EVIDENCE, {
+      question: 'severe malaria in a 12 kg child',
+      patient: { ageDays: 900, sex: 'FEMALE', weightKg: 12 },
+    });
+    expect(evidenceRes.isError).toBeUndefined();
+    expect(evidenceRes.structuredContent).toMatchObject({
+      status: 'ANSWERED',
+      contentVersion: '2026.11.0',
+    });
+
     const composedRes = await server.callTool('custom_domain_tool', { ward: 'NICU' });
     expect(composedRes.content[0]?.text).toBe('ward:NICU');
+  });
+
+  it('returns graceful isError when ask_clinical_evidence is called on a transport without it', async () => {
+    const server = createClinicalKnowledgeMcpServer({ transport: createStubTransport(false) });
+    const res = await server.callTool(ClinicalMcpToolName.ASK_CLINICAL_EVIDENCE, {
+      question: 'artesunate dosing',
+    });
+    expect(res.isError).toBe(true);
+    expect(res.content[0]?.text).toContain('not supported');
   });
 
   it('handles JSON-RPC 2.0 initialize, notifications, tools/list, tools/call, and stdio framing', async () => {
@@ -147,6 +192,11 @@ describe('@crosdat/mcp clinical knowledge server and composition', () => {
       protocolVersion: MCP_PROTOCOL_VERSION,
       serverInfo: { name: 'crosdat-clinical-mcp' },
     });
+    expect(SUPPORTED_MCP_PROTOCOL_VERSIONS).toEqual([
+      '2025-06-18',
+      '2025-03-26',
+      '2024-11-05',
+    ]);
 
     // Notifications without `id` return null
     const notifReply = await server.handleJsonRpc({
@@ -192,5 +242,93 @@ describe('@crosdat/mcp clinical knowledge server and composition', () => {
     };
     expect(parsed.id).toBe(77);
     expect(parsed.result.structuredContent.hits[0]?.slug).toBe('severe-malaria');
+  });
+
+  it('supports MCP 2025-06-18 Streamable-HTTP, 2024-11-05 negotiation, and params._meta traceparent', async () => {
+    const traceEvents: Array<{ traceparent?: string; method: string; toolName?: string }> = [];
+    const server = createClinicalKnowledgeMcpServer({
+      transport: createStubTransport(),
+      onTraceContext: (ctx) => traceEvents.push(ctx),
+    });
+
+    const traceparent = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+
+    const initLatest = await handleMcpHttpRequest(server, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        jsonrpc: '2.0',
+        id: 10,
+        method: 'initialize',
+        params: { protocolVersion: '2025-06-18' },
+      },
+    });
+    expect(initLatest.status).toBe(200);
+    expect(initLatest.headers['MCP-Protocol-Version']).toBe('2025-06-18');
+    expect(initLatest.body).toMatchObject({
+      jsonrpc: '2.0',
+      id: 10,
+      result: { protocolVersion: '2025-06-18' },
+    });
+
+    const initLegacy = await handleMcpHttpRequest(server, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'MCP-Protocol-Version': '2024-11-05',
+      },
+      body: {
+        jsonrpc: '2.0',
+        id: 11,
+        method: 'initialize',
+        params: { protocolVersion: '2024-11-05' },
+      },
+    });
+    expect(initLegacy.status).toBe(200);
+    expect(initLegacy.headers['MCP-Protocol-Version']).toBe('2024-11-05');
+    expect(initLegacy.body).toMatchObject({
+      result: { protocolVersion: '2024-11-05' },
+    });
+
+    const toolCall = await handleMcpHttpRequest(server, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'MCP-Protocol-Version': '2025-06-18',
+      },
+      body: {
+        jsonrpc: '2.0',
+        id: 12,
+        method: 'tools/call',
+        params: {
+          name: ClinicalMcpToolName.ASK_CLINICAL_EVIDENCE,
+          arguments: { question: 'severe malaria artesunate' },
+          _meta: { traceparent },
+        },
+      },
+    });
+    expect(toolCall.status).toBe(200);
+    expect(toolCall.headers['MCP-Protocol-Version']).toBe('2025-06-18');
+    expect(toolCall.headers.traceparent).toBe(traceparent);
+    expect(traceEvents).toContainEqual({
+      traceparent,
+      method: 'tools/call',
+      toolName: ClinicalMcpToolName.ASK_CLINICAL_EVIDENCE,
+    });
+
+    const notification = await handleMcpHttpRequest(server, {
+      method: 'POST',
+      headers: { 'MCP-Protocol-Version': '2025-06-18' },
+      body: { jsonrpc: '2.0', method: 'notifications/initialized' },
+    });
+    expect(notification.status).toBe(202);
+    expect(notification.body).toBeUndefined();
+
+    const unsupported = await handleMcpHttpRequest(server, {
+      method: 'POST',
+      headers: { 'MCP-Protocol-Version': '1999-01-01' },
+      body: { jsonrpc: '2.0', id: 13, method: 'ping' },
+    });
+    expect(unsupported.status).toBe(400);
   });
 });

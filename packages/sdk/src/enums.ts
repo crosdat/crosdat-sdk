@@ -21,8 +21,38 @@ export const EmbedModuleKind = {
   NEONATAL_TPN: 'neonatal-tpn',
   CLINICAL_GUIDE: 'clinical-guide',
   CLINICAL_LEARNING: 'clinical-learning',
+  EVIDENCE_ASK: 'evidence-ask',
 } as const;
 export type EmbedModuleKind = (typeof EmbedModuleKind)[keyof typeof EmbedModuleKind];
+
+/**
+ * AI assistance integration mode configured by a host application for CROSDAT embeds.
+ *
+ * - `crosdat-cloud`: Routes evidence Q&A and voice assistance through CROSDAT's managed gateway.
+ * - `custom-endpoint`: Routes AI requests to a customer-configured inference endpoint URL.
+ * - `host-callbacks`: Delegates AI prompts and voice capture to host-supplied callbacks.
+ * - `disabled`: Hides AI assistance triggers while keeping deterministic clinical workflows active.
+ */
+export const ClinicalAiMode = {
+  CROSDAT_CLOUD: 'crosdat-cloud',
+  CUSTOM_ENDPOINT: 'custom-endpoint',
+  HOST_CALLBACKS: 'host-callbacks',
+  DISABLED: 'disabled',
+} as const;
+export type ClinicalAiMode = (typeof ClinicalAiMode)[keyof typeof ClinicalAiMode];
+
+/**
+ * Outcome status returned by citation-locked clinical evidence Q&A queries.
+ *
+ * - `ANSWERED`: Curated reference evidence supported a cited answer.
+ * - `INSUFFICIENT_CURATED_EVIDENCE`: Curated bundle lacked sufficient evidence and abstained safely.
+ */
+export const EvidenceAnswerStatus = {
+  ANSWERED: 'ANSWERED',
+  INSUFFICIENT_CURATED_EVIDENCE: 'INSUFFICIENT_CURATED_EVIDENCE',
+} as const;
+export type EvidenceAnswerStatus =
+  (typeof EvidenceAnswerStatus)[keyof typeof EvidenceAnswerStatus];
 
 /**
  * Privacy-tiered telemetry mode configured on a licensee account or embed session.

@@ -1,4 +1,5 @@
 import type {
+  AskClinicalEvidenceInput,
   CalculatorEvaluationInput,
   ClinicalTransport,
   DoseEvaluationInput,
@@ -14,6 +15,7 @@ import type {
  */
 export const ClinicalMcpToolName = {
   SEARCH_GUIDELINES: 'search_guidelines',
+  ASK_CLINICAL_EVIDENCE: 'ask_clinical_evidence',
   EVALUATE_TRIAGE_AND_DIFFERENTIALS: 'evaluate_triage_and_differentials',
   CALCULATE_PAEDIATRIC_DOSE: 'calculate_paediatric_dose',
   CALCULATE_NEONATAL_TPN: 'calculate_neonatal_tpn',
@@ -101,12 +103,12 @@ function toStructuredToolResult(value: unknown): McpCallToolResult {
 }
 
 /**
- * Builds the 6 stateless reference clinical knowledge MCP tool definitions
+ * Builds the 7 stateless reference clinical knowledge MCP tool definitions
  * backed by any {@link ClinicalTransport}.
  *
  * @param transport - Underlying HTTP + DPoP or custom `ClinicalTransport`.
  * @param defaultOverrides - Optional facility clinical overrides injected by default.
- * @returns Array of 6 deterministic clinical MCP tool definitions.
+ * @returns Array of 7 deterministic clinical MCP tool definitions.
  */
 export function buildReferenceClinicalMcpTools(
   transport: ClinicalTransport,
@@ -144,6 +146,56 @@ export function buildReferenceClinicalMcpTools(
           throw new Error('search_guidelines requires a non-empty `query` string.');
         }
         const res = await transport.searchGuidelines(input);
+        return toStructuredToolResult(res);
+      },
+    },
+    {
+      name: ClinicalMcpToolName.ASK_CLINICAL_EVIDENCE,
+      description:
+        'Answers a clinical question using citation-locked curated paediatric and neonatal guidelines, returning inline [n] citations and deterministic tool calculations or abstaining safely when evidence is insufficient.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          question: {
+            type: 'string',
+            description:
+              'Clinical question or guideline query (never include patient-identifiable data).',
+          },
+          patient: PATIENT_CONTEXT_SCHEMA,
+          contextSlugs: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Optional active presenting complaint or playbook slugs to scope retrieval.',
+          },
+          maxCitations: {
+            type: 'number',
+            minimum: 1,
+            maximum: 20,
+            description: 'Maximum number of cited passages to include in the answer.',
+          },
+        },
+        required: ['question'],
+      },
+      handler: async (raw) => {
+        const input = raw as unknown as AskClinicalEvidenceInput;
+        if (!input || typeof input.question !== 'string' || input.question.trim().length === 0) {
+          throw new Error('ask_clinical_evidence requires a non-empty `question` string.');
+        }
+        if (!transport.askClinicalEvidence) {
+          return {
+            isError: true,
+            content: [
+              {
+                type: 'text',
+                text: 'ask_clinical_evidence is not supported by the active ClinicalTransport.',
+              },
+            ],
+          };
+        }
+        const res = await transport.askClinicalEvidence({
+          ...input,
+          facilityOverrides: input.facilityOverrides ?? defaultOverrides,
+        });
         return toStructuredToolResult(res);
       },
     },

@@ -2,10 +2,12 @@ import type {
   AppearanceThemePreset,
   AwareStewardshipCategory,
   BiologicalSex,
+  ClinicalAiMode,
   ClinicalAlertSeverity,
   ClinicalLearningDomain,
   ClinicalLearningMode,
   EmbedModuleKind,
+  EvidenceAnswerStatus,
   TelemetryMode,
   TerminologySystem,
 } from './enums.js';
@@ -802,6 +804,96 @@ export interface ClinicalLearningGradeReport {
   citations: ClinicalBasisCitation[];
 }
 
+// -- Citation-Locked Clinical Evidence Q&A & Host AI Options ------------------
+
+/**
+ * Request payload for asking a citation-locked question against the curated
+ * clinical reference evidence corpus (`POST /evidence/ask`).
+ */
+export interface AskClinicalEvidenceInput {
+  /** Clinical question or guideline query (never include patient-identifiable data). */
+  question: string;
+  /** Optional de-identified patient biological context for age/weight-aware grounding. */
+  patient?: PatientClinicalContext;
+  /** Optional active presenting complaint or playbook slugs to bias retrieval. */
+  contextSlugs?: string[];
+  /** Optional hospital-local formulary, substitution, and lab overrides. */
+  facilityOverrides?: FacilityClinicalOverridesInput;
+  /** Maximum number of supporting passage citations to return. */
+  maxCitations?: number;
+}
+
+/**
+ * Verified citation attached to an inline `[n]` footnote in a curated clinical
+ * evidence Q&A response.
+ */
+export interface ClinicalEvidenceCitation {
+  /** 1-based inline footnote index matching `[1]`, `[2]` markers in `answerMarkdown`. */
+  footnoteIndex: number;
+  /** Stable passage identifier from the compiled reference passage index. */
+  passageId: string;
+  /** Authoritative source citation key declared in the guideline bundle. */
+  sourceId: string;
+  /** Human-readable title of the guideline, playbook, or monograph. */
+  title: string;
+  /** Short verbatim excerpt supporting the cited claim. */
+  excerpt: string;
+  /** Optional 1-based PDF page number when citing a guideline document. */
+  pageNumber?: number;
+  /** Optional chapter or section heading within the cited source. */
+  sectionHeading?: string;
+}
+
+/**
+ * Deterministic calculator or dosing engine result invoked during clinical
+ * evidence synthesis.
+ */
+export interface ClinicalEvidenceToolResult {
+  /** Canonical tool identifier invoked by the gateway. */
+  toolName: string;
+  /** Plain-English summary of the deterministic calculation output. */
+  summary: string;
+  /** Structured calculation payload returned by the deterministic engine. */
+  payload: Record<string, unknown>;
+}
+
+/**
+ * Structured citation-locked response returned by `POST /evidence/ask`.
+ */
+export interface AskClinicalEvidenceResult {
+  /** Whether curated evidence supported an answer or deterministically abstained. */
+  status: EvidenceAnswerStatus;
+  /** Cited markdown prose using inline `[1]`, `[2]` markers, or abstention guidance. */
+  answerMarkdown: string;
+  /** Ordered verified citations corresponding to footnote markers in `answerMarkdown`. */
+  citations: ClinicalEvidenceCitation[];
+  /** Deterministic calculator or dose tool outputs invoked during synthesis. */
+  deterministicToolResults: ClinicalEvidenceToolResult[];
+  /** Curated content bundle version string used to ground the answer. */
+  contentVersion: string;
+  /** Model identifier that synthesized prose around verified passages. */
+  modelId: string;
+  /** Highest fused retrieval confidence score (`0..1`). */
+  topEvidenceScore: number;
+  /** End-to-end processing latency in milliseconds. */
+  latencyMs: number;
+}
+
+/**
+ * Host EHR configuration controlling AI assistance capabilities inside CROSDAT
+ * runtime UI embeds.
+ */
+export interface ClinicalAiHostOptions {
+  /** Selected AI integration mode (`crosdat-cloud`, `custom-endpoint`, `host-callbacks`, or `disabled`). */
+  mode: ClinicalAiMode;
+  /** Custom inference gateway URL when `mode` is `'custom-endpoint'`. */
+  endpointUrl?: string;
+  /** Enables inline voice dictation controls inside supported embeds. */
+  voiceEnabled?: boolean;
+  /** Enables ambient encounter capture controls inside supported embeds. */
+  ambientEnabled?: boolean;
+}
+
 // -- Pluggable Transport Interface --------------------------------------------
 
 /**
@@ -836,6 +928,8 @@ export interface ClinicalTransport {
   submitClinicalLearningAttempt(
     input: SubmitClinicalLearningAttemptInput,
   ): Promise<ClinicalLearningGradeReport>;
+  /** Answers a clinical question with citation-locked curated guideline evidence. */
+  askClinicalEvidence?(input: AskClinicalEvidenceInput): Promise<AskClinicalEvidenceResult>;
   /** Lists WHO and CDC LMS growth chart standards bundled by the gateway. */
   listGrowthStandards?(): Promise<GrowthStandardsMap>;
   /** Lists structured presenting complaints for interactive clerking UIs. */

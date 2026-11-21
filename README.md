@@ -8,15 +8,15 @@ Official TypeScript, Web Component, React, and Model Context Protocol (MCP) SDKs
 | --- | --- | --- |
 | [`@crosdat/sdk`](./packages/sdk) | Typed HTTP + RFC 9449 DPoP client, pluggable `ClinicalTransport`, and request/response DTOs | Zero |
 | [`@crosdat/embed`](./packages/embed) | Framework-free `<crosdat-clinical-embed>` Web Component, `mountClinicalEmbed`, and verified `postMessage` bridge | `@crosdat/sdk` |
-| [`@crosdat/react`](./packages/react) | `<CrosdatClinicalProvider>`, seven `<*Embed />` components, and `@crosdat/react/headless` zero-DOM hooks | `@crosdat/embed`, `@crosdat/sdk` (`react >= 18` peer) |
-| [`@crosdat/mcp`](./packages/mcp) | Model Context Protocol (MCP) server (`crosdat-mcp`) and extensible tool registry for AI clinical agents | `@crosdat/sdk` |
+| [`@crosdat/react`](./packages/react) | `<CrosdatClinicalProvider>`, eight `<*Embed />` components, and `@crosdat/react/headless` zero-DOM hooks | `@crosdat/embed`, `@crosdat/sdk` (`react >= 18` peer) |
+| [`@crosdat/mcp`](./packages/mcp) | Model Context Protocol (MCP) server (`crosdat-mcp`, `2025-06-18` Streamable-HTTP + stdio) and extensible tool registry | `@crosdat/sdk` |
 
 ## Architecture & Security Model
 
 1. **Never embed `ck_live_*` API keys in browser code.** Your backend exchanges its server-side API key (`ck_live_*` or `ck_test_*`) via `client.createEmbedSession(...)` for a short-lived browser `sessionToken` bound to the browser's non-extractable WebCrypto ECDSA P-256 public key thumbprint (`cnf.jkt`, RFC 9449 DPoP).
 2. **Zero third-party cookies.** Runtime UI embeds receive their initial bootstrap envelope through an ephemeral URL `#fragment` (`#crosdat=...`), which is never transmitted in HTTP `Referer` headers or server access logs and is immediately scrubbed via `history.replaceState` on frame boot.
 3. **Origin + nonce verified `postMessage`.** Every message exchanged between the host page and the sandboxed `<iframe>` is validated against both `event.origin` and a per-mount cryptographic `channelNonce`.
-4. **Progressive customisation.** Style embedded modules with named presets (`crosdat-light`, `crosdat-dark`, `neutral-clinical`, `high-contrast`), semantic CSS tokens (`AppearanceConfig.variables`), slot classes (`AppearanceConfig.elements`), white-label footer control (`hideBranding`), or build completely custom interfaces using `@crosdat/react/headless`.
+4. **Progressive customisation.** Style embedded modules with named presets (`crosdat-light`, `crosdat-dark`, `neutral-clinical`, `high-contrast`), semantic CSS tokens (`AppearanceConfig.variables`), slot classes (`AppearanceConfig.elements`), white-label footer control (`hideBranding`), configure host AI integration modes (`ClinicalAiHostOptions`: `crosdat-cloud`, `custom-endpoint`, `host-callbacks`, `disabled`), or build completely custom interfaces using `@crosdat/react/headless`.
 5. **De-identified clinical inputs.** SDK methods accept biological parameters (`ageDays`, `sex`, `weightKg`, `heightCm`, `gestationalAgeDays`, `allergyKeys`)—never patient names, medical record numbers, phone numbers, or addresses.
 
 ## Quickstart
@@ -98,6 +98,7 @@ export function PaediatricChart({ sessionToken }: { sessionToken: string }) {
 - `neonatal-tpn` (`<NeonatalTpnEmbed />`) — Neonatal parenteral nutrition compounding, GIR, osmolarity, and calcium-phosphate safety checks.
 - `clinical-guide` (`<ClinicalGuideEmbed />`) — Cited clinical playbooks with ICD-11, SNOMED CT GPS, ICD-10, LOINC, RxNorm, and WHO ATC codes.
 - `clinical-learning` (`<ClinicalLearningStationEmbed />`) — `PRACTICE` and timed `EXAM` OSCE simulation stations with deterministic 6-domain grading.
+- `evidence-ask` (`<ClinicalEvidenceAskEmbed />`) — Citation-locked clinical reference evidence explorer backed by curated guidelines and deterministic tools.
 
 ## Workspace Commands
 

@@ -2,6 +2,7 @@ import { mountClinicalEmbed, type MountedClinicalEmbed } from '@crosdat/embed';
 import {
   EmbedModuleKind,
   type AppearanceConfig,
+  type ClinicalAiHostOptions,
   type ClinicalFeedbackEvent,
   type ClinicalSafetyAlert,
   type FacilityClinicalOverridesInput,
@@ -11,7 +12,7 @@ import { useEffect, useRef } from 'react';
 import { useCrosdatClinical } from './provider.js';
 
 /**
- * Shared props supported across all seven CROSDAT React `<*Embed />` components.
+ * Shared props supported across all CROSDAT React `<*Embed />` components.
  */
 export interface BaseClinicalEmbedProps<TOutput = unknown> {
   /** Optional container CSS class name on the host wrapper `<div>`. */
@@ -26,6 +27,8 @@ export interface BaseClinicalEmbedProps<TOutput = unknown> {
   patientContext?: PatientClinicalContext;
   /** Per-embed facility clinical overrides merged over provider defaults. */
   facilityOverrides?: FacilityClinicalOverridesInput;
+  /** Optional host AI integration options (`crosdat-cloud`, `custom-endpoint`, `host-callbacks`, `disabled`). */
+  ai?: ClinicalAiHostOptions;
   /** Fired once the runtime module inside the frame is interactive. */
   onReady?: (info: { module: EmbedModuleKind; heightPx: number }) => void;
   /** Fired whenever the module emits a clinical calculation or signed output. */
@@ -52,6 +55,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
   appearance,
   patientContext,
   facilityOverrides,
+  ai,
   onReady,
   onOutput,
   onSafetyAlert,
@@ -74,6 +78,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
       : undefined;
 
   const effectiveOverrides = facilityOverrides ?? ctx.facilityOverrides;
+  const aiSerialized = ai ? JSON.stringify(ai) : undefined;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -85,6 +90,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
       module,
       sessionToken: ctx.sessionToken,
       targetSlug,
+      ai,
       appearance: mergedAppearance,
       patientContext,
       facilityOverrides: effectiveOverrides,
@@ -109,7 +115,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
       lastContextJsonRef.current = undefined;
       lastOverridesJsonRef.current = undefined;
     };
-  }, [ctx.embedBaseUrl, ctx.apiBaseUrl, ctx.sessionToken, module, targetSlug]);
+  }, [ctx.embedBaseUrl, ctx.apiBaseUrl, ctx.sessionToken, module, targetSlug, aiSerialized]);
 
   const lastAppearanceJsonRef = useRef<string | undefined>(undefined);
   const lastContextJsonRef = useRef<string | undefined>(undefined);
@@ -270,6 +276,34 @@ export function ClinicalLearningStationEmbed({
       {...rest}
       module={EmbedModuleKind.CLINICAL_LEARNING}
       targetSlug={scenarioSlug}
+    />
+  );
+}
+
+/**
+ * Props for {@link ClinicalEvidenceAskEmbed}, specifying an optional initial
+ * `contextSlug` to bias curated guideline retrieval.
+ */
+export interface ClinicalEvidenceAskEmbedProps extends BaseClinicalEmbedProps {
+  /** Optional presenting complaint or playbook slug used to scope initial evidence lookup. */
+  contextSlug?: string;
+}
+
+/**
+ * Embedded citation-locked clinical reference evidence explorer (`evidence-ask`).
+ *
+ * @param props - Optional context slug, host AI options, appearance, and callbacks.
+ * @returns Runtime clinical evidence Q&A embed frame.
+ */
+export function ClinicalEvidenceAskEmbed({
+  contextSlug,
+  ...rest
+}: ClinicalEvidenceAskEmbedProps) {
+  return (
+    <ClinicalModuleEmbedFrame
+      {...rest}
+      module={EmbedModuleKind.EVIDENCE_ASK}
+      targetSlug={contextSlug}
     />
   );
 }

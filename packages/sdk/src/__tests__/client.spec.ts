@@ -195,4 +195,78 @@ describe('CrosdatClient and HttpClinicalTransport', () => {
     expect(verified.httpMethod).toBe('POST');
     expect(verified.httpUrl).toBe('https://api.crosdat.com/api/v1/feedback');
   });
+
+  it('posts citation-locked evidence queries to POST /evidence/ask with DPoP and Bearer auth', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const sampleResponse = {
+      status: 'ANSWERED' as const,
+      answerMarkdown: 'Initial parenteral artesunate dose is 3.0 mg/kg for children < 20 kg [1].',
+      citations: [
+        {
+          footnoteIndex: 1,
+          passageId: 'who-malaria-p42',
+          sourceId: 'who-malaria',
+          title: 'WHO Guidelines for Malaria',
+          excerpt: 'Children weighing < 20 kg should receive 3.0 mg/kg parenteral artesunate.',
+          pageNumber: 42,
+          sectionHeading: 'Severe Malaria Dosing',
+        },
+      ],
+      deterministicToolResults: [
+        {
+          toolName: 'calculate_paediatric_dose',
+          summary: 'Artesunate 36 mg IV at 0, 12, and 24 hours',
+          payload: { calculatedSingleDose: 36, doseUnit: 'mg' },
+        },
+      ],
+      contentVersion: '2026.11.0',
+      modelId: 'crosdat-evidence-v1',
+      topEvidenceScore: 0.94,
+      latencyMs: 185,
+    };
+
+    const fetchFn: typeof fetch = vi.fn(async (input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      calls.push({ url, init });
+      return new Response(JSON.stringify({ data: sampleResponse }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    const dpopClient = createCrosdatClient({
+      baseUrl: 'https://api.crosdat.com/api/v1',
+      sessionToken: 'sess_tok_evidence',
+      fetchFn,
+    });
+
+    const dpopResult = await dpopClient.askClinicalEvidence({
+      question: 'What is the IV artesunate dose for a 12 kg child with severe malaria?',
+      patient: { ageDays: 900, sex: 'FEMALE', weightKg: 12 },
+      contextSlugs: ['severe-malaria'],
+      maxCitations: 3,
+    });
+
+    expect(dpopResult).toEqual(sampleResponse);
+    expect(calls[0]!.url).toBe('https://api.crosdat.com/api/v1/evidence/ask');
+    expect(calls[0]!.init?.method).toBe('POST');
+    const dpopHeaders = calls[0]!.init?.headers as Record<string, string>;
+    expect(dpopHeaders.Authorization).toBe('DPoP sess_tok_evidence');
+    const verified = await verifyDpopProof(dpopHeaders.DPoP!);
+    expect(verified.httpMethod).toBe('POST');
+    expect(verified.httpUrl).toBe('https://api.crosdat.com/api/v1/evidence/ask');
+
+    const bearerClient = createCrosdatClient({
+      baseUrl: 'https://api.crosdat.com/api/v1',
+      apiKey: 'ck_test_evidence',
+      enableDpop: false,
+      fetchFn,
+    });
+    await bearerClient.askClinicalEvidence({
+      question: 'When is parenteral artesunate de-escalated to oral ACT?',
+    });
+    const bearerHeaders = calls[1]!.init?.headers as Record<string, string>;
+    expect(bearerHeaders.Authorization).toBe('Bearer ck_test_evidence');
+    expect(bearerHeaders.DPoP).toBeUndefined();
+  });
 });

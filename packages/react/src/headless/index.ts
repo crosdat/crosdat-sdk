@@ -1,4 +1,6 @@
 import type {
+  AskClinicalEvidenceInput,
+  AskClinicalEvidenceResult,
   CalculatorEvaluationInput,
   CalculatorEvaluationResult,
   ClinicalLearningGradeReport,
@@ -146,6 +148,25 @@ export function useNeonatalTpn() {
     (input: NeonatalTpnEvaluationInput): Promise<NeonatalTpnEvaluationResult> =>
       client.evaluateNeonatalTpn(input),
     [client],
+  );
+  return useAsyncAction(runner);
+}
+
+/**
+ * Zero-DOM headless hook for asking citation-locked questions against the
+ * curated clinical reference evidence bundle (`POST /evidence/ask`).
+ *
+ * @returns Reactive state (`data`, `isLoading`, `error`) and `evaluate(input)`.
+ */
+export function useClinicalEvidenceAsk() {
+  const { client, facilityOverrides } = useCrosdatClinical();
+  const runner = useCallback(
+    (input: AskClinicalEvidenceInput): Promise<AskClinicalEvidenceResult> =>
+      client.askClinicalEvidence({
+        ...input,
+        facilityOverrides: input.facilityOverrides ?? facilityOverrides,
+      }),
+    [client, facilityOverrides],
   );
   return useAsyncAction(runner);
 }

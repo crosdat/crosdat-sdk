@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   useClerkingSession,
   useClinicalCalculator,
+  useClinicalEvidenceAsk,
   useClinicalLearningStation,
   useDosePrescriber,
   useGrowthChart,
@@ -13,6 +14,7 @@ import {
 import {
   ClerkingEmbed,
   ClinicalCalculatorsEmbed,
+  ClinicalEvidenceAskEmbed,
   ClinicalGuideEmbed,
   ClinicalLearningStationEmbed,
   CrosdatClinicalProvider,
@@ -87,6 +89,24 @@ function createMockTransport(): ClinicalTransport {
       citations: [],
     })),
     searchGuidelines: vi.fn(async () => ({ hits: [] })),
+    askClinicalEvidence: vi.fn(async (input) => ({
+      status: 'ANSWERED' as const,
+      answerMarkdown: `Cited answer for ${input.question} [1].`,
+      citations: [
+        {
+          footnoteIndex: 1,
+          passageId: 'who-pb-sepsis-1',
+          sourceId: 'who-pb',
+          title: 'WHO Pocket Book',
+          excerpt: 'Administer IV ampicillin and gentamicin promptly.',
+        },
+      ],
+      deterministicToolResults: [],
+      contentVersion: '2026.11.0',
+      modelId: 'crosdat-evidence-v1',
+      topEvidenceScore: 0.92,
+      latencyMs: 140,
+    })),
     startClinicalLearningSession: vi.fn(async (input) => ({
       attemptId: 'att_01',
       scenarioSlug: input.scenarioSlug,
@@ -110,7 +130,7 @@ function createMockTransport(): ClinicalTransport {
 }
 
 describe('@crosdat/react components and headless clinical hooks', () => {
-  it('mounts all seven <*Embed /> components inside CrosdatClinicalProvider', () => {
+  it('mounts all eight <*Embed /> components inside CrosdatClinicalProvider', () => {
     const transport = createMockTransport();
     const client = createCrosdatClient({ transport });
 
@@ -128,11 +148,15 @@ describe('@crosdat/react components and headless clinical hooks', () => {
         <NeonatalTpnEmbed />
         <ClinicalGuideEmbed playbookSlug="severe-malaria" />
         <ClinicalLearningStationEmbed scenarioSlug="neonatal-sepsis-hypoglycaemia" />
+        <ClinicalEvidenceAskEmbed
+          contextSlug="severe-malaria"
+          ai={{ mode: 'crosdat-cloud', voiceEnabled: true }}
+        />
       </CrosdatClinicalProvider>,
     );
 
     const iframes = container.querySelectorAll('iframe');
-    expect(iframes).toHaveLength(7);
+    expect(iframes).toHaveLength(8);
     expect(iframes[0]?.src).toContain('/clerking#crosdat=');
     expect(iframes[1]?.src).toContain('/growth-chart#crosdat=');
     expect(iframes[2]?.src).toContain('/clinical-calculators#crosdat=');
@@ -140,6 +164,13 @@ describe('@crosdat/react components and headless clinical hooks', () => {
     expect(iframes[4]?.src).toContain('/neonatal-tpn#crosdat=');
     expect(iframes[5]?.src).toContain('/clinical-guide#crosdat=');
     expect(iframes[6]?.src).toContain('/clinical-learning#crosdat=');
+    expect(iframes[7]?.src).toContain('/evidence-ask#crosdat=');
+
+    const evidenceHash = iframes[7]!.src.slice(iframes[7]!.src.indexOf('#crosdat='));
+    window.history.replaceState(null, '', `/embed/evidence-ask${evidenceHash}`);
+    const decodedEvidence = consumeBootstrapFragment(window);
+    expect(decodedEvidence?.targetSlug).toBe('severe-malaria');
+    expect(decodedEvidence?.ai).toEqual({ mode: 'crosdat-cloud', voiceEnabled: true });
   });
 
   it('forwards onFeedback and appearance.hideFeedback to mounted embed frames', () => {
@@ -278,5 +309,23 @@ describe('@crosdat/react components and headless clinical hooks', () => {
     });
     expect(osceHook.result.current.session?.attemptId).toBe('att_01');
     expect(osceHook.result.current.gradeReport?.passed).toBe(true);
+
+    const evidenceHook = renderHook(() => useClinicalEvidenceAsk(), { wrapper });
+    await act(async () => {
+      await evidenceHook.result.current.evaluate({
+        question: 'First-line antibiotics for neonatal sepsis?',
+        patient: { ageDays: 3, sex: 'MALE', weightKg: 3.1 },
+      });
+    });
+    expect(evidenceHook.result.current.data?.status).toBe('ANSWERED');
+    expect(evidenceHook.result.current.data?.citations).toHaveLength(1);
+    expect(transport.askClinicalEvidence).toHaveBeenCalledWith({
+      question: 'First-line antibiotics for neonatal sepsis?',
+      patient: { ageDays: 3, sex: 'MALE', weightKg: 3.1 },
+      facilityOverrides: {
+        facilityId: 'fac_1',
+        formulary: { amoxicillin: { inStock: true } },
+      },
+    });
   });
 });
