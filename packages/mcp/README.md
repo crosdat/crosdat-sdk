@@ -8,7 +8,7 @@ Model Context Protocol (MCP) server and extensible tool registry grounding AI cl
 2. `evaluate_triage_and_differentials` — Evaluates emergency/priority danger signs, next discriminating bedside questions, and ranked differentials with ICD-11, SNOMED CT, and LOINC codes.
 3. `calculate_paediatric_dose` — Computes weight-, age-, and indication-specific doses, max-dose ceilings, measurable `mL` volumes, continuous IV infusion recipes, and WHO AWaRe categories.
 4. `calculate_neonatal_tpn` — Computes neonatal parenteral nutrition compounding volumes, GIR, osmolarity, and calcium-phosphate safety alerts.
-5. `compute_growth_zscore` — Computes WHO Child Growth (0–19y) and Fenton Preterm (22–50w) z-scores and percentiles.
+5. `compute_growth_zscore` — Computes anthropometric z-scores and percentiles across WHO Child Growth (0–19y), CDC Growth (0–20y including 2022 extended BMI), Fenton Preterm (22–50w), INTERGROWTH-21st, Down syndrome, and Turner syndrome references.
 6. `run_clinical_calculator` — Runs any of the 34 deterministic bedside clinical calculators.
 
 ## Standalone CLI (`crosdat-mcp`)

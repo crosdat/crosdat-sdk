@@ -74,6 +74,21 @@ const PATIENT_CONTEXT_SCHEMA = {
     weightKg: { type: 'number', exclusiveMinimum: 0, description: 'Body weight in kilograms.' },
     heightCm: { type: 'number', exclusiveMinimum: 0, description: 'Length or height in cm.' },
     headCircumferenceCm: { type: 'number', exclusiveMinimum: 0 },
+    muacCm: {
+      type: 'number',
+      exclusiveMinimum: 0,
+      description: 'Mid-upper arm circumference (MUAC) in centimetres.',
+    },
+    motherHeightCm: {
+      type: 'number',
+      exclusiveMinimum: 0,
+      description: "Biological mother's adult height in centimetres.",
+    },
+    fatherHeightCm: {
+      type: 'number',
+      exclusiveMinimum: 0,
+      description: "Biological father's adult height in centimetres.",
+    },
     gestationalAgeDays: {
       type: 'number',
       minimum: 140,
@@ -260,26 +275,67 @@ export function buildReferenceClinicalMcpTools(
     {
       name: ClinicalMcpToolName.COMPUTE_GROWTH_ZSCORE,
       description:
-        'Computes exact WHO Child Growth (0-19 years) or Fenton Preterm (22-50 weeks) z-scores, percentiles, LOINC codes, and malnutrition alerts.',
+        'Computes exact anthropometric z-scores, percentiles, LOINC codes, and nutritional alerts across WHO Child Growth (0-19 years), CDC Growth (0-20 years including 2022 extended BMI), Fenton Preterm (22-50 weeks), INTERGROWTH-21st, Down syndrome, and Turner syndrome references.',
       inputSchema: {
         type: 'object',
         properties: {
-          sex: { type: 'string', enum: ['MALE', 'FEMALE', 'INTERSEX', 'UNKNOWN'] },
+          sex: {
+            type: 'string',
+            enum: ['MALE', 'FEMALE', 'INTERSEX', 'UNKNOWN'],
+            description: 'Biological sex used to select sex-specific LMS reference curves.',
+          },
           gestationalAgeDays: {
             type: 'number',
-            description: 'Gestational age at birth in total days (selects Fenton curves when < 259).',
+            description:
+              'Gestational age at birth in total days (selects Fenton or INTERGROWTH-21st preterm curves when < 259 days).',
+          },
+          conditionProfile: {
+            type: 'string',
+            enum: ['STANDARD', 'PRETERM', 'DOWN_SYNDROME', 'TURNER_SYNDROME'],
+            description:
+              'Optional clinical reference profile selecting specialized growth charts (standard WHO/CDC, preterm Fenton/INTERGROWTH-21st, Down syndrome, or Turner syndrome).',
           },
           measurements: {
             type: 'array',
+            description:
+              'One or more longitudinal anthropometric measurements across WHO (0-19y), CDC (0-20y, including 2022 extended BMI), Fenton (22-50w), INTERGROWTH-21st, Down syndrome, and Turner syndrome curves.',
             items: {
               type: 'object',
               properties: {
-                ageDays: { type: 'number', minimum: 0 },
-                postmenstrualAgeDays: { type: 'number' },
-                weightKg: { type: 'number', exclusiveMinimum: 0 },
-                heightCm: { type: 'number', exclusiveMinimum: 0 },
-                headCircumferenceCm: { type: 'number', exclusiveMinimum: 0 },
-                muacCm: { type: 'number', exclusiveMinimum: 0 },
+                ageDays: { type: 'number', minimum: 0, description: 'Chronological age in days.' },
+                postmenstrualAgeDays: {
+                  type: 'number',
+                  description:
+                    'Postmenstrual age in days for preterm infants evaluated on Fenton or INTERGROWTH-21st curves.',
+                },
+                weightKg: {
+                  type: 'number',
+                  exclusiveMinimum: 0,
+                  description: 'Body weight in kilograms.',
+                },
+                heightCm: {
+                  type: 'number',
+                  exclusiveMinimum: 0,
+                  description: 'Recumbent length or standing height in centimetres.',
+                },
+                headCircumferenceCm: {
+                  type: 'number',
+                  exclusiveMinimum: 0,
+                  description: 'Occipitofrontal head circumference in centimetres.',
+                },
+                muacCm: {
+                  type: 'number',
+                  exclusiveMinimum: 0,
+                  description: 'Mid-upper arm circumference (MUAC) in centimetres.',
+                },
+                recordedAt: {
+                  type: 'string',
+                  description: 'Optional ISO-8601 capture timestamp for longitudinal plotting.',
+                },
+                label: {
+                  type: 'string',
+                  description: 'Optional visit or measurement note.',
+                },
               },
               required: ['ageDays'],
             },

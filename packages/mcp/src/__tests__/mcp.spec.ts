@@ -132,6 +132,13 @@ describe('@crosdat/mcp clinical knowledge server and composition', () => {
 
     const composedRes = await server.callTool('custom_domain_tool', { ward: 'NICU' });
     expect(composedRes.content[0]?.text).toBe('ward:NICU');
+
+    const growthTool = server
+      .listTools()
+      .find((t) => t.name === ClinicalMcpToolName.COMPUTE_GROWTH_ZSCORE);
+    expect(growthTool?.description).toContain('INTERGROWTH-21st');
+    expect(growthTool?.description).toContain('Turner syndrome');
+    expect(growthTool?.inputSchema.properties.conditionProfile).toBeDefined();
   });
 
   it('handles JSON-RPC 2.0 initialize, notifications, tools/list, tools/call, and stdio framing', async () => {
