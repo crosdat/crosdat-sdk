@@ -205,6 +205,12 @@ export interface SubmitEmbedFeedbackResult {
   accepted: true;
   /** Stable ticket reference identifier for tracking the submitted feedback. */
   ticketRef: string;
+  /** Initial or current HQ triage status (for example `NEW` or `IN_REVIEW`). */
+  hqStatus?: string;
+  /** ISO-8601 timestamp when the feedback ticket was recorded at HQ. */
+  createdAt?: string;
+  /** `true` when an identical `idempotencyKey` replay returned an existing ticket. */
+  deduplicated?: boolean;
 }
 
 /**
