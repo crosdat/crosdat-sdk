@@ -1,12 +1,19 @@
 import { mountClinicalEmbed, registerClinicalEmbedElement, type MountedClinicalEmbed } from '@crosdat/embed';
-import { AppearanceThemePreset, BiologicalSex } from '@crosdat/sdk';
+import { AppearanceThemePreset, BiologicalSex, type ClinicalFeedbackEvent } from '@crosdat/sdk';
 
 registerClinicalEmbedElement();
+
+declare global {
+  interface Window {
+    __crosdatHostEvents?: Array<{ kind: string; module?: string; detail: unknown }>;
+  }
+}
 
 const statusEl = document.getElementById('vanilla-status')!;
 const themeEl = document.getElementById('vanilla-theme') as HTMLSelectElement;
 const primaryEl = document.getElementById('vanilla-primary') as HTMLInputElement;
 const hideBrandingEl = document.getElementById('vanilla-hide-branding') as HTMLInputElement;
+const hideFeedbackEl = document.getElementById('vanilla-hide-feedback') as HTMLInputElement;
 const mintBtnEl = document.getElementById('vanilla-mint-btn') as HTMLButtonElement;
 const clerkingRoot = document.getElementById('vanilla-clerking-root')!;
 const growthRoot = document.getElementById('vanilla-growth-root')!;
@@ -30,12 +37,21 @@ let wcGrowth: HTMLElement | null = null;
 let wcCalculators: HTMLElement | null = null;
 let wcGuide: HTMLElement | null = null;
 
+function recordVanillaFeedback(module: string, detail: ClinicalFeedbackEvent) {
+  window.__crosdatHostEvents = [
+    ...(window.__crosdatHostEvents ?? []),
+    { kind: 'feedback', module, detail },
+  ];
+  statusEl.textContent = `Feedback submitted (${module}${detail.ticketRef ? ` · ${detail.ticketRef}` : ''})`;
+}
+
 function applyHostTheme(theme: string, primary: string) {
   document.documentElement.setAttribute('data-host-theme', theme);
   document.documentElement.style.setProperty('--host-accent', primary || '#0f766e');
   const appearance = {
     theme: theme as AppearanceThemePreset,
     hideBranding: hideBrandingEl.checked,
+    hideFeedback: hideFeedbackEl.checked,
     variables: { colorPrimary: primary || undefined },
   };
   for (const el of [wcClerking, wcGrowth, wcCalculators, wcGuide]) {
@@ -43,6 +59,7 @@ function applyHostTheme(theme: string, primary: string) {
     el.setAttribute('theme', theme);
     el.setAttribute('color-primary', primary);
     el.setAttribute('hide-branding', hideBrandingEl.checked ? 'true' : 'false');
+    el.setAttribute('hide-feedback', hideFeedbackEl.checked ? 'true' : 'false');
   }
   doseHandle?.updateAppearance(appearance);
   tpnHandle?.updateAppearance(appearance);
@@ -127,6 +144,10 @@ function createWcEmbed(
   el.setAttribute('theme', theme);
   el.setAttribute('color-primary', primary);
   el.setAttribute('hide-branding', hideBrandingEl.checked ? 'true' : 'false');
+  el.setAttribute('hide-feedback', hideFeedbackEl.checked ? 'true' : 'false');
+  el.addEventListener('crosdat:feedback', (event) => {
+    recordVanillaFeedback(module, (event as CustomEvent<ClinicalFeedbackEvent>).detail);
+  });
   return el;
 }
 
@@ -150,6 +171,7 @@ async function mintAndMount() {
     const appearance = {
       theme: theme as AppearanceThemePreset,
       hideBranding: hideBrandingEl.checked,
+      hideFeedback: hideFeedbackEl.checked,
       variables: { colorPrimary: primary || undefined },
     };
 
@@ -180,6 +202,7 @@ async function mintAndMount() {
       patientContext: { ageDays: 910, sex: BiologicalSex.FEMALE, weightKg: 13.4 },
       appearance,
       minHeightPx: 460,
+      onFeedback: (event) => recordVanillaFeedback('dose-prescriber', event),
     });
 
     tpnHandle?.unmount();
@@ -197,6 +220,7 @@ async function mintAndMount() {
       },
       appearance,
       minHeightPx: 480,
+      onFeedback: (event) => recordVanillaFeedback('neonatal-tpn', event),
     });
 
     learningHandle?.unmount();
@@ -208,6 +232,7 @@ async function mintAndMount() {
       sessionToken: data.sessionToken,
       appearance,
       minHeightPx: 460,
+      onFeedback: (event) => recordVanillaFeedback('clinical-learning', event),
     });
   } finally {
     mintBtnEl.disabled = false;
@@ -217,6 +242,7 @@ async function mintAndMount() {
 themeEl.addEventListener('change', () => applyHostTheme(themeEl.value, primaryEl.value.trim()));
 primaryEl.addEventListener('input', () => applyHostTheme(themeEl.value, primaryEl.value.trim()));
 hideBrandingEl.addEventListener('change', () => applyHostTheme(themeEl.value, primaryEl.value.trim()));
+hideFeedbackEl.addEventListener('change', () => applyHostTheme(themeEl.value, primaryEl.value.trim()));
 mintBtnEl.addEventListener('click', () => void mintAndMount());
 
 for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-http-probe]')) {

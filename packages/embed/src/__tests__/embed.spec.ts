@@ -52,6 +52,7 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     const onReady = vi.fn();
     const onClinicalOutput = vi.fn();
     const onSafetyAlert = vi.fn();
+    const onFeedback = vi.fn();
 
     const mounted = mountClinicalEmbed(container, {
       embedBaseUrl: 'https://embed.crosdat.com',
@@ -60,6 +61,7 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
       onReady,
       onClinicalOutput,
       onSafetyAlert,
+      onFeedback,
     });
 
     expect(mounted.iframe.getAttribute('sandbox')).toBe(
@@ -141,6 +143,27 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     );
     expect(onClinicalOutput).toHaveBeenCalledWith({ zScore: -2.4 });
 
+    const feedbackEvent = {
+      module: EmbedModuleKind.GROWTH_CHART,
+      category: 'USABILITY',
+      reasonCode: 'CHART_LEGEND',
+      surfaceKey: 'growth-chart',
+      targetKey: 'WEIGHT_FOR_AGE',
+      ticketRef: 'FBK-101',
+    };
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'https://embed.crosdat.com',
+        data: {
+          channel: CROSDAT_EMBED_CHANNEL,
+          channelNonce: mounted.channelNonce,
+          kind: FrameToHostMessageKind.FEEDBACK,
+          event: feedbackEvent,
+        },
+      }),
+    );
+    expect(onFeedback).toHaveBeenCalledWith(feedbackEvent);
+
     mounted.unmount();
     expect(container.querySelector('iframe')).toBeNull();
     container.remove();
@@ -200,11 +223,43 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     el.setAttribute('module', 'clinical-calculators');
     el.setAttribute('session-token', 'tok_wc_1');
     el.setAttribute('target-slug', 'apgar');
+    el.setAttribute('hide-feedback', 'true');
     document.body.appendChild(el);
 
     const iframe = el.querySelector('iframe');
     expect(iframe).not.toBeNull();
     expect(iframe?.src).toContain('https://embed.crosdat.com/clinical-calculators#crosdat=');
+
+    const feedbackListener = vi.fn();
+    el.addEventListener('crosdat:feedback', (e) => {
+      feedbackListener((e as CustomEvent).detail);
+    });
+
+    const hashPart = iframe!.src.slice(iframe!.src.indexOf('#crosdat='));
+    window.history.replaceState(null, '', `/embed/clinical-calculators${hashPart}`);
+    const decoded = consumeBootstrapFragment(window);
+    expect(decoded?.appearance?.hideFeedback).toBe(true);
+
+    const wcFeedback = {
+      module: EmbedModuleKind.CLINICAL_CALCULATORS,
+      category: 'CLINICAL_ACCURACY',
+      reasonCode: 'THRESHOLD_NOTE',
+      surfaceKey: 'clinical-calculators',
+      targetKey: 'apgar',
+      ticketRef: 'FBK-WC-1',
+    };
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'https://embed.crosdat.com',
+        data: {
+          channel: CROSDAT_EMBED_CHANNEL,
+          channelNonce: decoded!.channelNonce,
+          kind: FrameToHostMessageKind.FEEDBACK,
+          event: wcFeedback,
+        },
+      }),
+    );
+    expect(feedbackListener).toHaveBeenCalledWith(wcFeedback);
 
     el.remove();
     expect(el.querySelector('iframe')).toBeNull();

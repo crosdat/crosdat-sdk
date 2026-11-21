@@ -139,4 +139,60 @@ describe('CrosdatClient and HttpClinicalTransport', () => {
     expect(growth.standardUsed).toBe('WHO_CHILD_GROWTH');
     expect(customTransport.evaluateGrowth).toHaveBeenCalledTimes(1);
   });
+
+  it('submits PHI-free clinical feedback to POST /v1/feedback with DPoP and unwraps { data }', async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchFn: typeof fetch = vi.fn(async (input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      calls.push({ url, init });
+      return new Response(
+        JSON.stringify({
+          data: {
+            accepted: true,
+            ticketRef: 'FBK-2026-0042',
+          },
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    });
+
+    const client = createCrosdatClient({
+      baseUrl: 'https://api.crosdat.com/api/v1/',
+      sessionToken: 'sess_tok_feedback',
+      fetchFn,
+    });
+
+    const result = await client.submitFeedback({
+      category: 'CLINICAL_ACCURACY',
+      reasonCode: 'FORMULARY_MISMATCH',
+      surfaceKey: 'dose-prescriber',
+      targetKey: 'amoxicillin',
+      message: 'Local hospital stocks 125 mg / 5 mL suspension only.',
+      idempotencyKey: 'idem-feedback-1',
+      contextMetadata: { bundleVersion: '2026.11' },
+    });
+
+    expect(result).toEqual({ accepted: true, ticketRef: 'FBK-2026-0042' });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.url).toBe('https://api.crosdat.com/api/v1/feedback');
+    expect(calls[0]!.init?.method).toBe('POST');
+    expect(JSON.parse(calls[0]!.init?.body as string)).toEqual({
+      category: 'CLINICAL_ACCURACY',
+      reasonCode: 'FORMULARY_MISMATCH',
+      surfaceKey: 'dose-prescriber',
+      targetKey: 'amoxicillin',
+      message: 'Local hospital stocks 125 mg / 5 mL suspension only.',
+      idempotencyKey: 'idem-feedback-1',
+      contextMetadata: { bundleVersion: '2026.11' },
+    });
+
+    const headers = calls[0]!.init?.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('DPoP sess_tok_feedback');
+    const verified = await verifyDpopProof(headers.DPoP!);
+    expect(verified.httpMethod).toBe('POST');
+    expect(verified.httpUrl).toBe('https://api.crosdat.com/api/v1/feedback');
+  });
 });

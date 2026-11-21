@@ -31,6 +31,8 @@ import type {
   NeonatalTpnEvaluationResult,
   StartClinicalLearningSessionInput,
   SubmitClinicalLearningAttemptInput,
+  SubmitEmbedFeedbackInput,
+  SubmitEmbedFeedbackResult,
 } from './types.js';
 
 /**
@@ -325,6 +327,11 @@ export class HttpClinicalTransport implements ClinicalTransport {
   public listClinicalLearningScenarios(): Promise<ClinicalLearningScenarioSummary[]> {
     return this.request<ClinicalLearningScenarioSummary[]>('GET', '/clinical-learning/scenarios');
   }
+
+  /** @inheritdoc */
+  public submitFeedback(input: SubmitEmbedFeedbackInput): Promise<SubmitEmbedFeedbackResult> {
+    return this.request<SubmitEmbedFeedbackResult>('POST', '/feedback', input);
+  }
 }
 
 /**
@@ -445,6 +452,14 @@ export class CrosdatClient implements ClinicalTransport {
       throw new Error('Active transport does not implement listClinicalLearningScenarios()');
     }
     return this.transport.listClinicalLearningScenarios();
+  }
+
+  /** Submits PHI-free clinical feedback to `POST /v1/feedback`. */
+  public submitFeedback(input: SubmitEmbedFeedbackInput): Promise<SubmitEmbedFeedbackResult> {
+    if (!this.transport.submitFeedback) {
+      throw new Error('Active transport does not implement submitFeedback()');
+    }
+    return this.transport.submitFeedback(input);
   }
 }
 

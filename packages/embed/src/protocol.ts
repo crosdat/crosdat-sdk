@@ -1,5 +1,6 @@
 import type {
   AppearanceConfig,
+  ClinicalFeedbackEvent,
   ClinicalSafetyAlert,
   EmbedModuleKind,
   FacilityClinicalOverridesInput,
@@ -34,6 +35,7 @@ export const FrameToHostMessageKind = {
   CLINICAL_OUTPUT: 'CLINICAL_OUTPUT',
   SAFETY_ALERT: 'SAFETY_ALERT',
   ANALYTICS_EVENT: 'ANALYTICS_EVENT',
+  FEEDBACK: 'FEEDBACK',
   ERROR: 'ERROR',
 } as const;
 export type FrameToHostMessageKind =
@@ -128,6 +130,12 @@ export type FrameToHostMessage =
       channelNonce: string;
       kind: typeof FrameToHostMessageKind.ANALYTICS_EVENT;
       event: SanitizedAnalyticsEvent;
+    }
+  | {
+      channel: typeof CROSDAT_EMBED_CHANNEL;
+      channelNonce: string;
+      kind: typeof FrameToHostMessageKind.FEEDBACK;
+      event: ClinicalFeedbackEvent;
     }
   | {
       channel: typeof CROSDAT_EMBED_CHANNEL;

@@ -2,6 +2,7 @@ import { mountClinicalEmbed, type MountedClinicalEmbed } from '@crosdat/embed';
 import {
   EmbedModuleKind,
   type AppearanceConfig,
+  type ClinicalFeedbackEvent,
   type ClinicalSafetyAlert,
   type FacilityClinicalOverridesInput,
   type PatientClinicalContext,
@@ -31,6 +32,8 @@ export interface BaseClinicalEmbedProps<TOutput = unknown> {
   onOutput?: (output: TOutput) => void;
   /** Fired whenever a clinical danger sign or dosing alert triggers. */
   onSafetyAlert?: (alert: ClinicalSafetyAlert) => void;
+  /** Fired whenever a clinician submits PHI-free clinical feedback inside the embed. */
+  onFeedback?: (event: ClinicalFeedbackEvent) => void;
   /** Fired when a runtime error occurs inside the embedded module. */
   onError?: (error: { code: string; message: string }) => void;
 }
@@ -52,6 +55,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
   onReady,
   onOutput,
   onSafetyAlert,
+  onFeedback,
   onError,
 }: InternalModuleEmbedProps<TOutput>) {
   const ctx = useCrosdatClinical();
@@ -90,6 +94,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
       onClinicalOutput: (payload) => onOutput?.(payload as TOutput),
       onSafetyAlert,
       onAnalyticsEvent: ctx.onAnalyticsEvent,
+      onFeedback,
       onError,
     });
     mountedRef.current = handle;

@@ -1,5 +1,6 @@
 import type {
   AppearanceConfig,
+  ClinicalFeedbackEvent,
   ClinicalSafetyAlert,
   FacilityClinicalOverridesInput,
   PatientClinicalContext,
@@ -92,6 +93,8 @@ export interface EmbedFrameReceiverHandle {
   emitSafetyAlert(alert: ClinicalSafetyAlert): void;
   /** Emits a PHI-sanitized analytics event to the parent host. */
   emitAnalyticsEvent(event: SanitizedAnalyticsEvent): void;
+  /** Emits a PHI-free clinical feedback event to the parent host. */
+  emitFeedback(event: ClinicalFeedbackEvent): void;
   /** Emits a structured runtime error to the parent host. */
   emitError(code: string, message: string): void;
   /** Tears down `message` and `ResizeObserver` listeners. */
@@ -211,6 +214,9 @@ export function createEmbedFrameReceiver(
     },
     emitAnalyticsEvent(event: SanitizedAnalyticsEvent): void {
       send({ kind: FrameToHostMessageKind.ANALYTICS_EVENT, event });
+    },
+    emitFeedback(event: ClinicalFeedbackEvent): void {
+      send({ kind: FrameToHostMessageKind.FEEDBACK, event });
     },
     emitError(code: string, message: string): void {
       send({ kind: FrameToHostMessageKind.ERROR, code, message });

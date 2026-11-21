@@ -56,6 +56,7 @@ export function App() {
   );
   const [primaryColor, setPrimaryColor] = useState(params.get('primary') ?? '#0f766e');
   const [hideBranding, setHideBranding] = useState(params.get('hideBranding') === 'true');
+  const [hideFeedback, setHideFeedback] = useState(params.get('hideFeedback') === 'true');
   const [events, setEvents] = useState<Array<{ kind: string; module?: string; detail: unknown }>>([]);
   const [httpOutput, setHttpOutput] = useState<string>('Run a headless HTTP gateway call to inspect live HQ output.');
   const [httpBusy, setHttpBusy] = useState(false);
@@ -116,11 +117,14 @@ export function App() {
     const el = wcRef.current;
     if (!el) return undefined;
     const onWcReady = (e: Event) => pushEvent('wc:ready', 'growth-chart', (e as CustomEvent).detail);
+    const onWcFeedback = (e: Event) => pushEvent('feedback', 'growth-chart', (e as CustomEvent).detail);
     const onWcError = (e: Event) => pushEvent('wc:error', 'growth-chart', (e as CustomEvent).detail);
     el.addEventListener('crosdat:ready', onWcReady);
+    el.addEventListener('crosdat:feedback', onWcFeedback);
     el.addEventListener('crosdat:error', onWcError);
     return () => {
       el.removeEventListener('crosdat:ready', onWcReady);
+      el.removeEventListener('crosdat:feedback', onWcFeedback);
       el.removeEventListener('crosdat:error', onWcError);
     };
   }, [sessionToken]);
@@ -156,9 +160,10 @@ export function App() {
     () => ({
       theme,
       hideBranding,
+      hideFeedback,
       variables: { colorPrimary: primaryColor || undefined },
     }),
-    [theme, hideBranding, primaryColor],
+    [theme, hideBranding, hideFeedback, primaryColor],
   );
 
   const handleAnalytics = useCallback((ev: SanitizedAnalyticsEvent) => {
@@ -238,6 +243,10 @@ export function App() {
         <label className="host-field">
           <input type="checkbox" checked={hideBranding} onChange={(e) => setHideBranding(e.target.checked)} />
           Hide footer branding
+        </label>
+        <label className="host-field">
+          <input type="checkbox" checked={hideFeedback} onChange={(e) => setHideFeedback(e.target.checked)} />
+          Hide feedback
         </label>
         <button type="button" className="host-btn" onClick={() => setSessionToken(draftToken.trim())}>
           Mount Embeds
@@ -356,6 +365,7 @@ export function App() {
               onReady={(info) => pushEvent('react:ready', info.module, info)}
               onOutput={(out) => pushEvent('react:output', 'clerking', out)}
               onSafetyAlert={(al) => pushEvent('react:alert', 'clerking', al)}
+              onFeedback={(event) => pushEvent('feedback', 'clerking', event)}
               onError={(err) => pushEvent('react:error', 'clerking', err)}
             />
           </section>
@@ -373,6 +383,7 @@ export function App() {
                 onReady={(info) => pushEvent('react:ready', info.module, info)}
                 onOutput={(out) => pushEvent('react:output', 'growth-chart', out)}
                 onSafetyAlert={(al) => pushEvent('react:alert', 'growth-chart', al)}
+                onFeedback={(event) => pushEvent('feedback', 'growth-chart', event)}
                 onError={(err) => pushEvent('react:error', 'growth-chart', err)}
               />
             </section>
@@ -390,6 +401,7 @@ export function App() {
                 onReady={(info) => pushEvent('react:ready', info.module, info)}
                 onOutput={(out) => pushEvent('react:output', 'dose-prescriber', out)}
                 onSafetyAlert={(al) => pushEvent('react:alert', 'dose-prescriber', al)}
+                onFeedback={(event) => pushEvent('feedback', 'dose-prescriber', event)}
                 onError={(err) => pushEvent('react:error', 'dose-prescriber', err)}
               />
             </section>
@@ -405,6 +417,7 @@ export function App() {
                 minHeightPx={480}
                 onReady={(info) => pushEvent('react:ready', info.module, info)}
                 onOutput={(out) => pushEvent('react:output', 'clinical-calculators', out)}
+                onFeedback={(event) => pushEvent('feedback', 'clinical-calculators', event)}
                 onError={(err) => pushEvent('react:error', 'clinical-calculators', err)}
               />
             </section>
@@ -420,6 +433,7 @@ export function App() {
                 minHeightPx={480}
                 onReady={(info) => pushEvent('react:ready', info.module, info)}
                 onOutput={(out) => pushEvent('react:output', 'neonatal-tpn', out)}
+                onFeedback={(event) => pushEvent('feedback', 'neonatal-tpn', event)}
                 onError={(err) => pushEvent('react:error', 'neonatal-tpn', err)}
               />
             </section>
@@ -435,6 +449,7 @@ export function App() {
                 minHeightPx={480}
                 onReady={(info) => pushEvent('react:ready', info.module, info)}
                 onOutput={(out) => pushEvent('react:output', 'clinical-guide', out)}
+                onFeedback={(event) => pushEvent('feedback', 'clinical-guide', event)}
                 onError={(err) => pushEvent('react:error', 'clinical-guide', err)}
               />
             </section>
@@ -449,6 +464,7 @@ export function App() {
                 minHeightPx={480}
                 onReady={(info) => pushEvent('react:ready', info.module, info)}
                 onOutput={(out) => pushEvent('react:output', 'clinical-learning', out)}
+                onFeedback={(event) => pushEvent('feedback', 'clinical-learning', event)}
                 onError={(err) => pushEvent('react:error', 'clinical-learning', err)}
               />
             </section>
@@ -468,6 +484,7 @@ export function App() {
                 theme={theme}
                 color-primary={primaryColor}
                 hide-branding={hideBranding ? 'true' : 'false'}
+                hide-feedback={hideFeedback ? 'true' : 'false'}
               />
             </section>
           </div>

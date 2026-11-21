@@ -156,6 +156,8 @@ export interface AppearanceConfig {
    * white-label commercial plan. Clinical source citations remain accessible.
    */
   hideBranding?: boolean;
+  /** Suppress inline clinical feedback triggers inside embedded workbenches. */
+  hideFeedback?: boolean;
   /** Optional string overrides for button labels and headings. */
   labels?: Record<string, string>;
 }
@@ -173,6 +175,57 @@ export interface SanitizedAnalyticsEvent {
   occurredAt: string;
   /** Non-PHI metadata (content keys, durations, counts—never patient identifiers). */
   metadata: Record<string, string | number | boolean>;
+}
+
+/**
+ * PHI-free clinical feedback submission payload sent to `POST /v1/feedback`.
+ */
+export interface SubmitEmbedFeedbackInput {
+  /** Feedback category (for example `CLINICAL_ACCURACY`, `USABILITY`, `MISSING_GUIDELINE`). */
+  category: string;
+  /** Structured reason code within the chosen category. */
+  reasonCode: string;
+  /** UI surface key where the feedback trigger was invoked. */
+  surfaceKey: string;
+  /** Optional medication, calculator, playbook, or catalog key targeted by the report. */
+  targetKey?: string;
+  /** Plain-text clinician feedback message (must be PHI-free). */
+  message: string;
+  /** Optional client-generated idempotency key to prevent duplicate submissions. */
+  idempotencyKey?: string;
+  /** Optional non-PHI contextual metadata (versions, surface state, content keys). */
+  contextMetadata?: Record<string, unknown>;
+}
+
+/**
+ * Confirmation returned after accepting a PHI-free clinical feedback submission.
+ */
+export interface SubmitEmbedFeedbackResult {
+  /** Always `true` when the feedback report has been accepted for triage. */
+  accepted: true;
+  /** Stable ticket reference identifier for tracking the submitted feedback. */
+  ticketRef: string;
+}
+
+/**
+ * PHI-free clinical feedback event emitted from an embedded CROSDAT module to
+ * the host application.
+ */
+export interface ClinicalFeedbackEvent {
+  /** Embedded module where the feedback was submitted. */
+  module: EmbedModuleKind;
+  /** Feedback category selected by the clinician. */
+  category: string;
+  /** Structured reason code within the category. */
+  reasonCode: string;
+  /** UI surface key where the feedback trigger was invoked. */
+  surfaceKey: string;
+  /** Optional medication, calculator, playbook, or catalog key targeted by the report. */
+  targetKey?: string;
+  /** Ticket reference identifier returned by the gateway when persisted. */
+  ticketRef?: string;
+  /** Optional non-PHI contextual metadata attached to the event. */
+  contextMetadata?: Record<string, unknown>;
 }
 
 /**
@@ -787,4 +840,6 @@ export interface ClinicalTransport {
   listGuidelineCatalog?(): Promise<GuidelineCatalogEntry[]>;
   /** Lists available OSCE clinical learning scenarios. */
   listClinicalLearningScenarios?(): Promise<ClinicalLearningScenarioSummary[]>;
+  /** Submits PHI-free clinical feedback from an embedded workbench or SDK client. */
+  submitFeedback?(input: SubmitEmbedFeedbackInput): Promise<SubmitEmbedFeedbackResult>;
 }

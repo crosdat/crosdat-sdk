@@ -1,4 +1,5 @@
-import { createCrosdatClient, type ClinicalTransport } from '@crosdat/sdk';
+import { CROSDAT_EMBED_CHANNEL, FrameToHostMessageKind, consumeBootstrapFragment } from '@crosdat/embed';
+import { EmbedModuleKind, createCrosdatClient, type ClinicalTransport } from '@crosdat/sdk';
 import { act, cleanup, render, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -139,6 +140,52 @@ describe('@crosdat/react components and headless clinical hooks', () => {
     expect(iframes[4]?.src).toContain('/neonatal-tpn#crosdat=');
     expect(iframes[5]?.src).toContain('/clinical-guide#crosdat=');
     expect(iframes[6]?.src).toContain('/clinical-learning#crosdat=');
+  });
+
+  it('forwards onFeedback and appearance.hideFeedback to mounted embed frames', () => {
+    const transport = createMockTransport();
+    const client = createCrosdatClient({ transport });
+    const onFeedback = vi.fn();
+
+    const { container } = render(
+      <CrosdatClinicalProvider
+        client={client}
+        embedBaseUrl="https://embed.crosdat.com"
+        sessionToken="tok_react_fb"
+        appearance={{ theme: 'neutral-clinical', hideFeedback: true }}
+      >
+        <DosePrescriberEmbed medicationKey="amoxicillin" onFeedback={onFeedback} />
+      </CrosdatClinicalProvider>,
+    );
+
+    const iframe = container.querySelector('iframe');
+    expect(iframe).not.toBeNull();
+    const hashPart = iframe!.src.slice(iframe!.src.indexOf('#crosdat='));
+    window.history.replaceState(null, '', `/embed/dose-prescriber${hashPart}`);
+    const decoded = consumeBootstrapFragment(window);
+    expect(decoded?.appearance?.hideFeedback).toBe(true);
+
+    const feedbackEvent = {
+      module: EmbedModuleKind.DOSE_PRESCRIBER,
+      category: 'CLINICAL_ACCURACY',
+      reasonCode: 'DOSE_CAP',
+      surfaceKey: 'dose-prescriber',
+      targetKey: 'amoxicillin',
+      ticketRef: 'FBK-REACT-1',
+    };
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'https://embed.crosdat.com',
+        data: {
+          channel: CROSDAT_EMBED_CHANNEL,
+          channelNonce: decoded!.channelNonce,
+          kind: FrameToHostMessageKind.FEEDBACK,
+          event: feedbackEvent,
+        },
+      }),
+    );
+
+    expect(onFeedback).toHaveBeenCalledWith(feedbackEvent);
   });
 
   it('executes all headless hooks and inherits provider facilityOverrides automatically', async () => {

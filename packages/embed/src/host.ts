@@ -1,5 +1,6 @@
 import type {
   AppearanceConfig,
+  ClinicalFeedbackEvent,
   ClinicalSafetyAlert,
   EmbedModuleKind,
   FacilityClinicalOverridesInput,
@@ -48,6 +49,8 @@ export interface MountClinicalEmbedOptions {
   onSafetyAlert?: (alert: ClinicalSafetyAlert) => void;
   /** Fired for PHI-sanitized UI analytics events when telemetry is enabled. */
   onAnalyticsEvent?: (event: SanitizedAnalyticsEvent) => void;
+  /** Fired whenever a clinician submits PHI-free clinical feedback inside the embed. */
+  onFeedback?: (event: ClinicalFeedbackEvent) => void;
   /** Fired when the embedded module reports an error. */
   onError?: (error: { code: string; message: string }) => void;
 }
@@ -185,6 +188,9 @@ export function mountClinicalEmbed(
       case FrameToHostMessageKind.ANALYTICS_EVENT:
         if (data.event) options.onAnalyticsEvent?.(data.event);
         break;
+      case FrameToHostMessageKind.FEEDBACK:
+        if (data.event) options.onFeedback?.(data.event);
+        break;
       case FrameToHostMessageKind.ERROR:
         options.onError?.({
           code: data.code ?? 'EMBED_RUNTIME_ERROR',
@@ -237,6 +243,7 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
       'target-slug',
       'theme',
       'hide-branding',
+      'hide-feedback',
       'color-primary',
       'primary-color',
       'density',
@@ -262,6 +269,7 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
     if (
       (name === 'theme' ||
         name === 'hide-branding' ||
+        name === 'hide-feedback' ||
         name === 'color-primary' ||
         name === 'primary-color' ||
         name === 'density') &&
@@ -278,6 +286,7 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
   private readAppearanceAttributes(): AppearanceConfig {
     const themeAttr = this.getAttribute('theme') as AppearanceConfig['theme'] | null;
     const hideBrandingAttr = this.getAttribute('hide-branding');
+    const hideFeedbackAttr = this.getAttribute('hide-feedback');
     const colorPrimaryAttr = this.getAttribute('color-primary') ?? this.getAttribute('primary-color');
     const densityAttr = this.getAttribute('density') as 'compact' | 'comfortable' | 'touch' | null;
     const variables: NonNullable<AppearanceConfig['variables']> = {
@@ -287,6 +296,11 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
     return {
       ...(themeAttr ? { theme: themeAttr } : {}),
       ...(hideBrandingAttr === 'true' || hideBrandingAttr === '' ? { hideBranding: true } : {}),
+      ...(hideFeedbackAttr === 'true' || hideFeedbackAttr === ''
+        ? { hideFeedback: true }
+        : hideFeedbackAttr === 'false'
+          ? { hideFeedback: false }
+          : {}),
       ...(Object.keys(variables).length > 0 ? { variables } : {}),
     };
   }
@@ -314,6 +328,8 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
         this.dispatchEvent(new CustomEvent('crosdat:alert', { detail })),
       onAnalyticsEvent: (detail) =>
         this.dispatchEvent(new CustomEvent('crosdat:analytics', { detail })),
+      onFeedback: (detail) =>
+        this.dispatchEvent(new CustomEvent('crosdat:feedback', { detail })),
       onError: (detail) => this.dispatchEvent(new CustomEvent('crosdat:error', { detail })),
     });
   }

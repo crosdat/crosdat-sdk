@@ -39,6 +39,7 @@ export type {
   CalculatorSummary,
   ClerkingComplaintSummary,
   ClinicalBasisCitation,
+  ClinicalFeedbackEvent,
   ClinicalLearningGradeReport,
   ClinicalLearningScenarioSummary,
   ClinicalLearningSessionView,
@@ -67,4 +68,6 @@ export type {
   SanitizedAnalyticsEvent,
   StartClinicalLearningSessionInput,
   SubmitClinicalLearningAttemptInput,
+  SubmitEmbedFeedbackInput,
+  SubmitEmbedFeedbackResult,
 } from './types.js';
