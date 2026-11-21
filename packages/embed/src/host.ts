@@ -109,7 +109,7 @@ export function mountClinicalEmbed(
 
   const iframe = container.ownerDocument.createElement('iframe');
   iframe.src = `${parsedEmbedUrl.toString()}${fragment}`;
-  iframe.title = options.iframeTitle ?? `CROSDAT ${options.module}`;
+  iframe.title = options.iframeTitle ?? `crosdat ${options.module}`;
   iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
   iframe.setAttribute('referrerpolicy', 'no-referrer');
   iframe.style.width = '100%';
@@ -185,7 +185,7 @@ export function mountClinicalEmbed(
       case FrameToHostMessageKind.ERROR:
         options.onError?.({
           code: data.code ?? 'EMBED_RUNTIME_ERROR',
-          message: data.message ?? 'CROSDAT embed reported an error',
+          message: data.message ?? 'crosdat embed reported an error',
         });
         break;
       default:
@@ -226,7 +226,17 @@ export function mountClinicalEmbed(
  */
 export class CrosdatClinicalEmbedElement extends HTMLElement {
   public static get observedAttributes(): string[] {
-    return ['embed-base-url', 'module', 'session-token', 'target-slug', 'theme', 'hide-branding'];
+    return [
+      'embed-base-url',
+      'module',
+      'session-token',
+      'target-slug',
+      'theme',
+      'hide-branding',
+      'color-primary',
+      'primary-color',
+      'density',
+    ];
   }
 
   private mounted: MountedClinicalEmbed | null = null;
@@ -245,7 +255,14 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
   /** Reacts to observed attribute changes. */
   public attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (oldValue === newValue) return;
-    if ((name === 'theme' || name === 'hide-branding') && this.mounted) {
+    if (
+      (name === 'theme' ||
+        name === 'hide-branding' ||
+        name === 'color-primary' ||
+        name === 'primary-color' ||
+        name === 'density') &&
+      this.mounted
+    ) {
       this.mounted.updateAppearance(this.readAppearanceAttributes());
       return;
     }
@@ -257,9 +274,16 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
   private readAppearanceAttributes(): AppearanceConfig {
     const themeAttr = this.getAttribute('theme') as AppearanceConfig['theme'] | null;
     const hideBrandingAttr = this.getAttribute('hide-branding');
+    const colorPrimaryAttr = this.getAttribute('color-primary') ?? this.getAttribute('primary-color');
+    const densityAttr = this.getAttribute('density') as 'compact' | 'comfortable' | 'touch' | null;
+    const variables: NonNullable<AppearanceConfig['variables']> = {
+      ...(colorPrimaryAttr ? { colorPrimary: colorPrimaryAttr } : {}),
+      ...(densityAttr ? { density: densityAttr } : {}),
+    };
     return {
       ...(themeAttr ? { theme: themeAttr } : {}),
       ...(hideBrandingAttr === 'true' || hideBrandingAttr === '' ? { hideBranding: true } : {}),
+      ...(Object.keys(variables).length > 0 ? { variables } : {}),
     };
   }
 

@@ -1,0 +1,243 @@
+/* Plain, framework-neutral CSS design tokens reacting to data-host-theme. */
+:root,
+[data-host-theme='crosdat-light'] {
+  color-scheme: light;
+  --host-bg: #f8fafc;
+  --host-surface: #ffffff;
+  --host-surface-2: #f1f5f9;
+  --host-border: #cbd5e1;
+  --host-text: #0f172a;
+  --host-muted: #475569;
+  --host-accent: #0f766e;
+  --host-accent-fg: #ffffff;
+}
+
+[data-host-theme='neutral-clinical'] {
+  color-scheme: light;
+  --host-bg: #fafafa;
+  --host-surface: #ffffff;
+  --host-surface-2: #f4f4f5;
+  --host-border: #e4e4e7;
+  --host-text: #111827;
+  --host-muted: #52525b;
+  --host-accent: #0284c7;
+  --host-accent-fg: #ffffff;
+}
+
+[data-host-theme='high-contrast'] {
+  color-scheme: light;
+  --host-bg: #ffffff;
+  --host-surface: #ffffff;
+  --host-surface-2: #f3f4f6;
+  --host-border: #000000;
+  --host-text: #000000;
+  --host-muted: #1f2937;
+  --host-accent: #000000;
+  --host-accent-fg: #ffffff;
+}
+
+[data-host-theme='crosdat-dark'] {
+  color-scheme: dark;
+  --host-bg: #070c17;
+  --host-surface: #0f172a;
+  --host-surface-2: #1e293b;
+  --host-border: #334155;
+  --host-text: #f8fafc;
+  --host-muted: #94a3b8;
+  --host-accent: #2dd4bf;
+  --host-accent-fg: #042f2e;
+}
+
+[data-host-theme='neutral-dark'] {
+  color-scheme: dark;
+  --host-bg: #0b0c0e;
+  --host-surface: #15171a;
+  --host-surface-2: #1f2226;
+  --host-border: #2a2d32;
+  --host-text: #f5f5f6;
+  --host-muted: #a1a1aa;
+  --host-accent: #fafafa;
+  --host-accent-fg: #09090b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--host-bg);
+  color: var(--host-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.host-shell {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.host-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: var(--host-surface);
+  border: 1px solid var(--host-border);
+}
+
+.host-title-group h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.host-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--host-muted);
+}
+
+.host-nav-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.host-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--host-surface);
+  border: 1px solid var(--host-border);
+}
+
+.host-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--host-muted);
+}
+
+.host-input,
+.host-select {
+  background: var(--host-surface-2);
+  color: var(--host-text);
+  border: 1px solid var(--host-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.host-btn,
+.host-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--host-border);
+  background: var(--host-surface-2);
+  color: var(--host-text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.host-btn:hover,
+.host-link-btn:hover {
+  border-color: var(--host-accent);
+}
+
+.host-btn.primary,
+.host-link-btn.active {
+  background: var(--host-accent);
+  color: var(--host-accent-fg);
+  border-color: var(--host-accent);
+}
+
+.host-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.host-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(540px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .host-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.host-panel {
+  border-radius: 12px;
+  background: var(--host-surface);
+  border: 1px solid var(--host-border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.host-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--host-border);
+}
+
+.host-panel-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.host-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--host-surface-2);
+  border: 1px solid var(--host-border);
+  color: var(--host-muted);
+}
+
+.host-code {
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--host-surface-2);
+  border: 1px solid var(--host-border);
+  color: var(--host-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

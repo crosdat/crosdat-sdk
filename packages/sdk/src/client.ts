@@ -186,7 +186,7 @@ export class HttpClinicalTransport implements ClinicalTransport {
       }
 
       let errorCode = `HTTP_${response.status}`;
-      let errorMessage = `CROSDAT API request failed with status ${response.status}`;
+      let errorMessage = `crosdat API request failed with status ${response.status}`;
       let details: Record<string, unknown> | undefined;
 
       try {

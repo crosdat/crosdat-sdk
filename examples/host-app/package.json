@@ -1,0 +1,11 @@
+{
+  "name": "crosdat-sdk-host-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Standalone framework-neutral and React host demo showcasing crosdat clinical embeds and direct HQ HTTP clinical gateway calls.",
+  "scripts": {
+    "dev": "npx --yes vite --config vite.config.ts --host 127.0.0.1 --port 18083 --strictPort",
+    "vanilla": "npx --yes vite --config vite.config.ts --open /vanilla.html --host 127.0.0.1 --port 18083 --strictPort"
+  }
+}

@@ -40,6 +40,7 @@ export type TelemetryMode = (typeof TelemetryMode)[keyof typeof TelemetryMode];
 export const AppearanceThemePreset = {
   CROSDAT_LIGHT: 'crosdat-light',
   CROSDAT_DARK: 'crosdat-dark',
+  NEUTRAL_DARK: 'neutral-dark',
   NEUTRAL_CLINICAL: 'neutral-clinical',
   HIGH_CONTRAST: 'high-contrast',
 } as const;

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-host-theme="neutral-dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>crosdat vanilla HTML &amp; plain CSS host demo</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main class="host-shell">
+      <header class="host-header">
+        <div class="host-title-group">
+          <h1>crosdat vanilla HTML &amp; plain CSS demo</h1>
+          <p class="host-subtitle">Zero React or Tailwind — mounts <code>&lt;crosdat-clinical-embed&gt;</code>, <code>mountClinicalEmbed()</code>, and plain <code>fetch()</code> HTTP calls.</p>
+        </div>
+        <nav class="host-nav-pills">
+          <a class="host-link-btn active" href="/vanilla.html">Vanilla HTML (No React)</a>
+          <a class="host-link-btn" href="/">React + Full SDK Suite</a>
+        </nav>
+      </header>
+
+      <section class="host-toolbar">
+        <span class="host-badge" id="vanilla-status">Minting live demo session...</span>
+        <label class="host-field">
+          Theme
+          <select class="host-select" id="vanilla-theme">
+            <option value="neutral-dark">Plain Dark</option>
+            <option value="crosdat-dark">crosdat Dark</option>
+            <option value="crosdat-light">crosdat Light</option>
+            <option value="neutral-clinical">Neutral Clinical</option>
+            <option value="high-contrast">High Contrast</option>
+          </select>
+        </label>
+        <label class="host-field">
+          Primary color
+          <input class="host-input" id="vanilla-primary" value="#0f766e" size="9" />
+        </label>
+        <label class="host-field">
+          <input type="checkbox" id="vanilla-hide-branding" />
+          Hide footer branding
+        </label>
+        <button type="button" class="host-btn primary" id="vanilla-mint-btn">Mint Fresh Session</button>
+      </section>
+
+      <section class="host-panel">
+        <div class="host-panel-head">
+          <h2>Web Component: &lt;crosdat-clinical-embed module="clerking"&gt;</h2>
+          <span class="host-badge">Vanilla Custom Element</span>
+        </div>
+        <div id="vanilla-clerking-root"></div>
+      </section>
+
+      <section class="host-grid">
+        <div class="host-panel">
+          <div class="host-panel-head">
+            <h2>Web Component: &lt;crosdat-clinical-embed module="growth-chart"&gt;</h2>
+            <span class="host-badge">Vanilla Custom Element</span>
+          </div>
+          <div id="vanilla-growth-root"></div>
+        </div>
+        <div class="host-panel">
+          <div class="host-panel-head">
+            <h2>Imperative DOM Mount: dose-prescriber</h2>
+            <span class="host-badge">mountClinicalEmbed()</span>
+          </div>
+          <div id="vanilla-dose-root"></div>
+        </div>
+      </section>
+
+      <section class="host-panel">
+        <div class="host-panel-head">
+          <h2>Direct HTTP Reference Medical Contents Calls (Plain fetch)</h2>
+          <div class="host-nav-pills">
+            <button type="button" class="host-btn" data-http-probe="guidelines">Guidelines Search</button>
+            <button type="button" class="host-btn" data-http-probe="calculators">List Calculators</button>
+            <button type="button" class="host-btn" data-http-probe="dosing">Evaluate Dose</button>
+            <button type="button" class="host-btn" data-http-probe="tpn">Evaluate TPN</button>
+            <button type="button" class="host-btn" data-http-probe="cds">CDS Services</button>
+          </div>
+        </div>
+        <pre class="host-code" id="vanilla-http-output">Loading HTTP medical content sample...</pre>
+      </section>
+    </main>
+
+    <script type="module" src="/src/vanilla.ts"></script>
+  </body>
+</html>
