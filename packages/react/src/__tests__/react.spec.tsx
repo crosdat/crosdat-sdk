@@ -188,6 +188,97 @@ describe('@crosdat/react components and headless clinical hooks', () => {
     expect(onFeedback).toHaveBeenCalledWith(feedbackEvent);
   });
 
+  it('passes growthSeries and growthOptions into GrowthChartEmbed and pushes updates without remounting', () => {
+    const transport = createMockTransport();
+    const client = createCrosdatClient({ transport });
+
+    const patientContext = {
+      ageDays: 910,
+      sex: 'FEMALE' as const,
+      weightKg: 13.4,
+      heightCm: 92,
+      muacCm: 15.3,
+      motherHeightCm: 164,
+      fatherHeightCm: 178,
+      growthSeries: [
+        {
+          ageDays: 365,
+          weightKg: 8.9,
+          heightCm: 74,
+          recordedAt: '2025-05-20T09:30:00Z',
+          label: '12m visit',
+        },
+        {
+          ageDays: 910,
+          weightKg: 13.4,
+          heightCm: 92,
+          muacCm: 15.3,
+          recordedAt: '2026-11-16T14:20:00Z',
+          label: '30m visit',
+        },
+      ],
+    };
+
+    const { container, rerender } = render(
+      <CrosdatClinicalProvider
+        client={client}
+        embedBaseUrl="https://embed.crosdat.com"
+        sessionToken="tok_growth_opts"
+      >
+        <GrowthChartEmbed
+          patientContext={patientContext}
+          growthOptions={{ allowExports: true, curveScale: 'centile' }}
+        />
+      </CrosdatClinicalProvider>,
+    );
+
+    const iframe = container.querySelector('iframe');
+    expect(iframe).not.toBeNull();
+    const hashPart = iframe!.src.slice(iframe!.src.indexOf('#crosdat='));
+    window.history.replaceState(null, '', `/embed/growth-chart${hashPart}`);
+    const decoded = consumeBootstrapFragment(window);
+    expect(decoded?.patientContext?.growthSeries).toHaveLength(2);
+    expect(decoded?.growthOptions).toEqual({ allowExports: true, curveScale: 'centile' });
+
+    const postSpy = vi.spyOn(iframe!.contentWindow!, 'postMessage');
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'https://embed.crosdat.com',
+        data: {
+          channel: CROSDAT_EMBED_CHANNEL,
+          channelNonce: decoded!.channelNonce,
+          kind: FrameToHostMessageKind.READY,
+          module: EmbedModuleKind.GROWTH_CHART,
+          heightPx: 540,
+        },
+      }),
+    );
+
+    rerender(
+      <CrosdatClinicalProvider
+        client={client}
+        embedBaseUrl="https://embed.crosdat.com"
+        sessionToken="tok_growth_opts"
+      >
+        <GrowthChartEmbed
+          patientContext={patientContext}
+          growthOptions={{ allowExports: true, curveScale: 'sd', caregiverMode: true }}
+        />
+      </CrosdatClinicalProvider>,
+    );
+
+    expect(container.querySelector('iframe')).toBe(iframe);
+    expect(postSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: CROSDAT_EMBED_CHANNEL,
+        channelNonce: decoded!.channelNonce,
+        kind: 'UPDATE_GROWTH_OPTIONS',
+        growthOptions: { allowExports: true, curveScale: 'sd', caregiverMode: true },
+      }),
+      'https://embed.crosdat.com',
+    );
+  });
+
   it('executes all headless hooks and inherits provider facilityOverrides automatically', async () => {
     const transport = createMockTransport();
     const client = createCrosdatClient({ transport });

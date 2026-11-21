@@ -11,6 +11,7 @@ export {
   type ClinicalGuideEmbedProps,
   type ClinicalLearningStationEmbedProps,
   type DosePrescriberEmbedProps,
+  type GrowthChartEmbedProps,
 } from './embeds.js';
 export {
   CrosdatClinicalProvider,

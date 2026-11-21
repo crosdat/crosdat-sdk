@@ -5,6 +5,7 @@ import {
   type ClinicalFeedbackEvent,
   type ClinicalSafetyAlert,
   type FacilityClinicalOverridesInput,
+  type GrowthChartEmbedOptions,
   type PatientClinicalContext,
 } from '@crosdat/sdk';
 import { useEffect, useRef } from 'react';
@@ -41,11 +42,13 @@ export interface BaseClinicalEmbedProps<TOutput = unknown> {
 interface InternalModuleEmbedProps<TOutput> extends BaseClinicalEmbedProps<TOutput> {
   module: EmbedModuleKind;
   targetSlug?: string;
+  growthOptions?: GrowthChartEmbedOptions;
 }
 
 function ClinicalModuleEmbedFrame<TOutput>({
   module,
   targetSlug,
+  growthOptions,
   className,
   iframeTitle,
   minHeightPx,
@@ -88,6 +91,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
       appearance: mergedAppearance,
       patientContext,
       facilityOverrides: effectiveOverrides,
+      growthOptions,
       iframeTitle,
       minHeightPx,
       onReady,
@@ -101,6 +105,7 @@ function ClinicalModuleEmbedFrame<TOutput>({
     lastAppearanceJsonRef.current = mergedAppearance ? JSON.stringify(mergedAppearance) : undefined;
     lastContextJsonRef.current = patientContext ? JSON.stringify(patientContext) : undefined;
     lastOverridesJsonRef.current = effectiveOverrides ? JSON.stringify(effectiveOverrides) : undefined;
+    lastGrowthOptionsJsonRef.current = growthOptions ? JSON.stringify(growthOptions) : undefined;
 
     return () => {
       handle.unmount();
@@ -108,12 +113,14 @@ function ClinicalModuleEmbedFrame<TOutput>({
       lastAppearanceJsonRef.current = undefined;
       lastContextJsonRef.current = undefined;
       lastOverridesJsonRef.current = undefined;
+      lastGrowthOptionsJsonRef.current = undefined;
     };
   }, [ctx.embedBaseUrl, ctx.apiBaseUrl, ctx.sessionToken, module, targetSlug]);
 
   const lastAppearanceJsonRef = useRef<string | undefined>(undefined);
   const lastContextJsonRef = useRef<string | undefined>(undefined);
   const lastOverridesJsonRef = useRef<string | undefined>(undefined);
+  const lastGrowthOptionsJsonRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!mountedRef.current || !mergedAppearance) return;
@@ -139,6 +146,14 @@ function ClinicalModuleEmbedFrame<TOutput>({
     mountedRef.current.updateFacilityOverrides(effectiveOverrides);
   }, [effectiveOverrides]);
 
+  useEffect(() => {
+    if (!mountedRef.current || !growthOptions) return;
+    const serialized = JSON.stringify(growthOptions);
+    if (serialized === lastGrowthOptionsJsonRef.current) return;
+    lastGrowthOptionsJsonRef.current = serialized;
+    mountedRef.current.updateGrowthOptions(growthOptions);
+  }, [growthOptions]);
+
   return <div ref={containerRef} className={className} data-crosdat-embed={module} />;
 }
 
@@ -153,12 +168,21 @@ export function ClerkingEmbed(props: BaseClinicalEmbedProps) {
 }
 
 /**
- * Embedded interactive WHO (0–19y) & Fenton (22–50w preterm) growth chart viewer.
+ * Props for {@link GrowthChartEmbed}, adding optional growth-chart display and export configuration.
+ */
+export interface GrowthChartEmbedProps extends BaseClinicalEmbedProps {
+  /** Optional growth-chart display, unit, scale, age-mode, and export options. */
+  growthOptions?: GrowthChartEmbedOptions;
+}
+
+/**
+ * Embedded interactive growth chart viewer supporting WHO (0–19y), CDC (0–20y),
+ * Fenton (22–50w), INTERGROWTH-21st, Down syndrome, and Turner syndrome references.
  *
- * @param props - Patient anthropometry, appearance customisation, and callbacks.
+ * @param props - Patient anthropometry, growth chart options, appearance customisation, and callbacks.
  * @returns Runtime growth chart embed frame.
  */
-export function GrowthChartEmbed(props: BaseClinicalEmbedProps) {
+export function GrowthChartEmbed(props: GrowthChartEmbedProps) {
   return <ClinicalModuleEmbedFrame {...props} module={EmbedModuleKind.GROWTH_CHART} />;
 }
 
