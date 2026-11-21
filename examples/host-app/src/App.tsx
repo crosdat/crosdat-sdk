@@ -151,7 +151,49 @@ export function App() {
       sex: BiologicalSex.FEMALE,
       weightKg: 13.4,
       heightCm: 92,
+      headCircumferenceCm: 47.9,
+      muacCm: 15.3,
       gestationalAgeDays: 273,
+      motherHeightCm: 164,
+      fatherHeightCm: 178,
+      growthSeries: [
+        {
+          ageDays: 365,
+          weightKg: 8.9,
+          heightCm: 74.0,
+          headCircumferenceCm: 44.9,
+          muacCm: 14.1,
+          recordedAt: '2025-05-20T09:30:00Z',
+          label: '12-month well-child check',
+        },
+        {
+          ageDays: 548,
+          weightKg: 10.3,
+          heightCm: 80.7,
+          headCircumferenceCm: 46.2,
+          muacCm: 14.5,
+          recordedAt: '2025-11-19T10:15:00Z',
+          label: '18-month immunisation visit',
+        },
+        {
+          ageDays: 730,
+          weightKg: 11.8,
+          heightCm: 86.4,
+          headCircumferenceCm: 47.2,
+          muacCm: 14.9,
+          recordedAt: '2026-05-20T11:00:00Z',
+          label: '24-month review',
+        },
+        {
+          ageDays: 910,
+          weightKg: 13.4,
+          heightCm: 92.0,
+          headCircumferenceCm: 47.9,
+          muacCm: 15.3,
+          recordedAt: '2026-11-16T14:20:00Z',
+          label: '30-month follow-up',
+        },
+      ],
     }),
     [],
   );
@@ -379,6 +421,7 @@ export function App() {
               <GrowthChartEmbed
                 iframeTitle="WHO Growth Chart"
                 patientContext={patientContext}
+                growthOptions={{ allowExports: true }}
                 minHeightPx={480}
                 onReady={(info) => pushEvent('react:ready', info.module, info)}
                 onOutput={(out) => pushEvent('react:output', 'growth-chart', out)}

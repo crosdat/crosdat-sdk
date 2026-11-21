@@ -181,6 +181,7 @@ async function mintAndMount() {
 
     growthRoot.replaceChildren();
     wcGrowth = createWcEmbed('growth-chart', data.sessionToken, theme, primary);
+    wcGrowth.setAttribute('growth-options', JSON.stringify({ allowExports: true }));
     growthRoot.appendChild(wcGrowth);
 
     calculatorsRoot.replaceChildren();
