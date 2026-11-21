@@ -4,6 +4,7 @@ import type {
   ClinicalSafetyAlert,
   EmbedModuleKind,
   FacilityClinicalOverridesInput,
+  GrowthChartEmbedOptions,
   PatientClinicalContext,
   SanitizedAnalyticsEvent,
 } from '@crosdat/sdk';
@@ -37,6 +38,8 @@ export interface MountClinicalEmbedOptions {
   patientContext?: PatientClinicalContext;
   /** Optional hospital-local formulary, substitution, and lab overrides. */
   facilityOverrides?: FacilityClinicalOverridesInput;
+  /** Optional growth-chart display and export options. */
+  growthOptions?: GrowthChartEmbedOptions;
   /** Accessible `title` attribute applied to the `<iframe>` element. */
   iframeTitle?: string;
   /** Minimum iframe height in pixels before first resize event (default `420`). */
@@ -69,6 +72,8 @@ export interface MountedClinicalEmbed {
   updatePatientContext(patientContext: PatientClinicalContext): void;
   /** Pushes updated hospital-local clinical overrides into the live frame. */
   updateFacilityOverrides(facilityOverrides: FacilityClinicalOverridesInput): void;
+  /** Pushes updated growth-chart display and export options into the live frame. */
+  updateGrowthOptions(growthOptions: GrowthChartEmbedOptions): void;
   /** Removes event listeners and detaches the iframe from the DOM. */
   unmount(): void;
 }
@@ -109,6 +114,7 @@ export function mountClinicalEmbed(
     appearance: options.appearance,
     patientContext: options.patientContext,
     facilityOverrides: options.facilityOverrides,
+    growthOptions: options.growthOptions,
     targetSlug: options.targetSlug,
     apiBaseUrl: options.apiBaseUrl,
   });
@@ -218,6 +224,9 @@ export function mountClinicalEmbed(
     updateFacilityOverrides(facilityOverrides: FacilityClinicalOverridesInput): void {
       postToFrame({ kind: HostToFrameMessageKind.UPDATE_FACILITY_OVERRIDES, facilityOverrides });
     },
+    updateGrowthOptions(growthOptions: GrowthChartEmbedOptions): void {
+      postToFrame({ kind: HostToFrameMessageKind.UPDATE_GROWTH_OPTIONS, growthOptions });
+    },
     unmount(): void {
       pendingOutbound.clear();
       hostWindow.removeEventListener('message', onMessage);
@@ -247,6 +256,7 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
       'color-primary',
       'primary-color',
       'density',
+      'growth-options',
     ];
   }
 
@@ -266,6 +276,10 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
   /** Reacts to observed attribute changes. */
   public attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (oldValue === newValue) return;
+    if (name === 'growth-options' && this.mounted) {
+      this.mounted.updateGrowthOptions(this.readGrowthOptionsAttribute() ?? {});
+      return;
+    }
     if (
       (name === 'theme' ||
         name === 'hide-branding' ||
@@ -281,6 +295,20 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
     if (this.isConnected) {
       this.remount();
     }
+  }
+
+  private readGrowthOptionsAttribute(): GrowthChartEmbedOptions | undefined {
+    const raw = this.getAttribute('growth-options');
+    if (!raw) return undefined;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as GrowthChartEmbedOptions;
+      }
+    } catch {
+      // Ignore malformed JSON attribute values.
+    }
+    return undefined;
   }
 
   private readAppearanceAttributes(): AppearanceConfig {
@@ -321,6 +349,7 @@ export class CrosdatClinicalEmbedElement extends HTMLElement {
       sessionToken,
       targetSlug: this.getAttribute('target-slug') ?? undefined,
       appearance: this.readAppearanceAttributes(),
+      growthOptions: this.readGrowthOptionsAttribute(),
       onReady: (detail) => this.dispatchEvent(new CustomEvent('crosdat:ready', { detail })),
       onClinicalOutput: (detail) =>
         this.dispatchEvent(new CustomEvent('crosdat:output', { detail })),

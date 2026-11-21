@@ -3,6 +3,7 @@ import type {
   ClinicalFeedbackEvent,
   ClinicalSafetyAlert,
   FacilityClinicalOverridesInput,
+  GrowthChartEmbedOptions,
   PatientClinicalContext,
   SanitizedAnalyticsEvent,
 } from '@crosdat/sdk';
@@ -74,6 +75,8 @@ export interface EmbedFrameReceiverOptions {
   onContextChange?: (context: PatientClinicalContext) => void;
   /** Invoked whenever the host updates `FacilityClinicalOverridesInput`. */
   onFacilityOverridesChange?: (overrides: FacilityClinicalOverridesInput) => void;
+  /** Invoked whenever the host updates `GrowthChartEmbedOptions`. */
+  onGrowthOptionsChange?: (growthOptions: GrowthChartEmbedOptions) => void;
 }
 
 /**
@@ -162,6 +165,11 @@ export function createEmbedFrameReceiver(
       case HostToFrameMessageKind.UPDATE_FACILITY_OVERRIDES:
         if (data.facilityOverrides) {
           options.onFacilityOverridesChange?.(data.facilityOverrides);
+        }
+        break;
+      case HostToFrameMessageKind.UPDATE_GROWTH_OPTIONS:
+        if (data.growthOptions) {
+          options.onGrowthOptionsChange?.(data.growthOptions);
         }
         break;
       case HostToFrameMessageKind.PING:

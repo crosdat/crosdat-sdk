@@ -24,7 +24,38 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
         theme: 'neutral-clinical',
         variables: { colorPrimary: '#0f766e', density: 'compact' },
       },
-      patientContext: { ageDays: 45, sex: 'MALE', weightKg: 4.5 },
+      patientContext: {
+        ageDays: 45,
+        sex: 'MALE',
+        weightKg: 4.5,
+        muacCm: 11.4,
+        motherHeightCm: 165,
+        fatherHeightCm: 179,
+        growthSeries: [
+          {
+            ageDays: 30,
+            weightKg: 4.1,
+            heightCm: 53.5,
+            recordedAt: '2026-10-15T08:00:00Z',
+            label: '1-month check',
+          },
+          {
+            ageDays: 45,
+            weightKg: 4.5,
+            heightCm: 55.2,
+            muacCm: 11.4,
+            recordedAt: '2026-10-30T09:15:00Z',
+          },
+        ],
+      },
+      growthOptions: {
+        initialMeasurement: 'WEIGHT_FOR_AGE',
+        curveScale: 'centile',
+        unitSystem: 'metric',
+        caregiverMode: false,
+        ageMode: 'both',
+        allowExports: true,
+      },
     });
 
     expect(fragment.startsWith('#crosdat=')).toBe(true);
@@ -35,6 +66,8 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     expect(consumed?.module).toBe('dose-prescriber');
     expect(consumed?.sessionToken).toBe('tok_ephemeral_1');
     expect(consumed?.channelNonce).toBe('nonce-xyz-1');
+    expect(consumed?.patientContext?.growthSeries).toHaveLength(2);
+    expect(consumed?.growthOptions?.allowExports).toBe(true);
     expect(window.location.hash).toBe('');
 
     // Re-reading on the same path (e.g. React StrictMode double-mount) still returns the cached bootstrap
@@ -164,6 +197,17 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     );
     expect(onFeedback).toHaveBeenCalledWith(feedbackEvent);
 
+    mounted.updateGrowthOptions({ curveScale: 'sd', allowExports: true });
+    expect(postSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: CROSDAT_EMBED_CHANNEL,
+        channelNonce: mounted.channelNonce,
+        kind: 'UPDATE_GROWTH_OPTIONS',
+        growthOptions: { curveScale: 'sd', allowExports: true },
+      }),
+      'https://embed.crosdat.com',
+    );
+
     mounted.unmount();
     expect(container.querySelector('iframe')).toBeNull();
     container.remove();
@@ -193,7 +237,12 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     window.history.replaceState(null, '', `/embed/neonatal-tpn${fragment}`);
 
     const onContextChange = vi.fn();
-    const receiver = createEmbedFrameReceiver({ frameWindow: window, onContextChange });
+    const onGrowthOptionsChange = vi.fn();
+    const receiver = createEmbedFrameReceiver({
+      frameWindow: window,
+      onContextChange,
+      onGrowthOptionsChange,
+    });
     expect(receiver.bootstrap?.module).toBe('neonatal-tpn');
 
     window.dispatchEvent(
@@ -212,6 +261,22 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
       sex: 'FEMALE',
       weightKg: 1.45,
     });
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'https://portal.example.org',
+        data: {
+          channel: CROSDAT_EMBED_CHANNEL,
+          channelNonce: 'frame-nonce-42',
+          kind: 'UPDATE_GROWTH_OPTIONS',
+          growthOptions: { unitSystem: 'imperial', caregiverMode: true },
+        },
+      }),
+    );
+    expect(onGrowthOptionsChange).toHaveBeenCalledWith({
+      unitSystem: 'imperial',
+      caregiverMode: true,
+    });
     receiver.destroy();
   });
 
@@ -224,6 +289,7 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     el.setAttribute('session-token', 'tok_wc_1');
     el.setAttribute('target-slug', 'apgar');
     el.setAttribute('hide-feedback', 'true');
+    el.setAttribute('growth-options', JSON.stringify({ allowExports: true, curveScale: 'centile' }));
     document.body.appendChild(el);
 
     const iframe = el.querySelector('iframe');
@@ -239,6 +305,7 @@ describe('@crosdat/embed host, protocol, and frame bridge', () => {
     window.history.replaceState(null, '', `/embed/clinical-calculators${hashPart}`);
     const decoded = consumeBootstrapFragment(window);
     expect(decoded?.appearance?.hideFeedback).toBe(true);
+    expect(decoded?.growthOptions).toEqual({ allowExports: true, curveScale: 'centile' });
 
     const wcFeedback = {
       module: EmbedModuleKind.CLINICAL_CALCULATORS,

@@ -4,6 +4,7 @@ import type {
   ClinicalSafetyAlert,
   EmbedModuleKind,
   FacilityClinicalOverridesInput,
+  GrowthChartEmbedOptions,
   PatientClinicalContext,
   SanitizedAnalyticsEvent,
 } from '@crosdat/sdk';
@@ -21,6 +22,7 @@ export const HostToFrameMessageKind = {
   UPDATE_APPEARANCE: 'UPDATE_APPEARANCE',
   UPDATE_CONTEXT: 'UPDATE_CONTEXT',
   UPDATE_FACILITY_OVERRIDES: 'UPDATE_FACILITY_OVERRIDES',
+  UPDATE_GROWTH_OPTIONS: 'UPDATE_GROWTH_OPTIONS',
   PING: 'PING',
 } as const;
 export type HostToFrameMessageKind =
@@ -61,6 +63,8 @@ export interface EmbedBootstrapPayload {
   patientContext?: PatientClinicalContext;
   /** Initial hospital-local clinical overrides. */
   facilityOverrides?: FacilityClinicalOverridesInput;
+  /** Initial growth-chart display and export options. */
+  growthOptions?: GrowthChartEmbedOptions;
   /** Optional calculator or scenario slug when pinning a specific item. */
   targetSlug?: string;
   /** Optional API gateway base URL override (`https://api.example.com/api/v1`). */
@@ -88,6 +92,12 @@ export type HostToFrameMessage =
       channelNonce: string;
       kind: typeof HostToFrameMessageKind.UPDATE_FACILITY_OVERRIDES;
       facilityOverrides: FacilityClinicalOverridesInput;
+    }
+  | {
+      channel: typeof CROSDAT_EMBED_CHANNEL;
+      channelNonce: string;
+      kind: typeof HostToFrameMessageKind.UPDATE_GROWTH_OPTIONS;
+      growthOptions: GrowthChartEmbedOptions;
     }
   | {
       channel: typeof CROSDAT_EMBED_CHANNEL;
