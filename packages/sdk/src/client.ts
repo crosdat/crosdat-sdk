@@ -304,8 +304,12 @@ export class HttpClinicalTransport implements ClinicalTransport {
   }
 
   /** @inheritdoc */
-  public listGrowthStandards(): Promise<GrowthStandardsMap> {
-    return this.request<GrowthStandardsMap>('GET', '/growth/standards');
+  public listGrowthStandards(keys?: readonly string[]): Promise<GrowthStandardsMap> {
+    const path =
+      keys && keys.length > 0
+        ? `/growth/standards?${new URLSearchParams({ keys: keys.join(',') }).toString()}`
+        : '/growth/standards';
+    return this.request<GrowthStandardsMap>('GET', path);
   }
 
   /** @inheritdoc */
@@ -414,12 +418,12 @@ export class CrosdatClient implements ClinicalTransport {
     return this.transport.submitClinicalLearningAttempt(input);
   }
 
-  /** Lists WHO and CDC LMS growth standards bundled on the gateway. */
-  public listGrowthStandards(): Promise<GrowthStandardsMap> {
+  /** Lists LMS growth standards bundled on the gateway, optionally filtered by standard keys. */
+  public listGrowthStandards(keys?: readonly string[]): Promise<GrowthStandardsMap> {
     if (!this.transport.listGrowthStandards) {
       throw new Error('Active transport does not implement listGrowthStandards()');
     }
-    return this.transport.listGrowthStandards();
+    return this.transport.listGrowthStandards(keys);
   }
 
   /** Lists curated presenting complaints supported by interactive clerking embeds. */

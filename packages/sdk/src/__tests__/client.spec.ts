@@ -195,4 +195,71 @@ describe('CrosdatClient and HttpClinicalTransport', () => {
     expect(verified.httpMethod).toBe('POST');
     expect(verified.httpUrl).toBe('https://api.crosdat.com/api/v1/feedback');
   });
+
+  it('requests /growth/standards with optional keys query parameter and evaluates longitudinal growthSeries', async () => {
+    const urls: string[] = [];
+    const fetchFn: typeof fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      urls.push(url);
+      if (url.includes('/growth/standards')) {
+        return new Response(
+          JSON.stringify({
+            data: {
+              WHO_WEIGHT_FOR_AGE_BOYS_0_5Y: {
+                standardKey: 'WHO_WEIGHT_FOR_AGE_BOYS_0_5Y',
+                axes: ['ageMonths', 'L', 'M', 'S'],
+                data: [],
+              },
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          data: {
+            standardUsed: 'WHO_CHILD_GROWTH',
+            standardFamily: 'DOWN_SYNDROME',
+            indicators: [],
+            alerts: [],
+            citations: [],
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    const client = createCrosdatClient({
+      baseUrl: 'https://api.crosdat.com/api/v1',
+      apiKey: 'ck_test_growth',
+      enableDpop: false,
+      fetchFn,
+    });
+
+    await client.listGrowthStandards();
+    const filtered = await client.listGrowthStandards(['WHO_WEIGHT_FOR_AGE_BOYS_0_5Y']);
+    expect(filtered.WHO_WEIGHT_FOR_AGE_BOYS_0_5Y?.standardKey).toBe('WHO_WEIGHT_FOR_AGE_BOYS_0_5Y');
+
+    const evalRes = await client.evaluateGrowth({
+      sex: 'MALE',
+      conditionProfile: 'DOWN_SYNDROME',
+      measurements: [
+        {
+          ageDays: 365,
+          weightKg: 8.6,
+          heightCm: 72.1,
+          headCircumferenceCm: 43.8,
+          muacCm: 13.8,
+          recordedAt: '2026-01-15T10:00:00Z',
+          label: '12-month follow-up',
+        },
+      ],
+    });
+    expect(evalRes.standardFamily).toBe('DOWN_SYNDROME');
+    expect(urls).toEqual([
+      'https://api.crosdat.com/api/v1/growth/standards',
+      'https://api.crosdat.com/api/v1/growth/standards?keys=WHO_WEIGHT_FOR_AGE_BOYS_0_5Y',
+      'https://api.crosdat.com/api/v1/growth/evaluate',
+    ]);
+  });
 });

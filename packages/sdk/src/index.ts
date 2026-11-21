@@ -54,6 +54,7 @@ export type {
   EmbedSessionCredentials,
   EvaluateDifferentialsInput,
   FacilityClinicalOverridesInput,
+  GrowthChartEmbedOptions,
   GrowthEvaluationInput,
   GrowthEvaluationResult,
   GrowthMeasurementPoint,

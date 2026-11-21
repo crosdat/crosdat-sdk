@@ -249,8 +249,16 @@ export interface PatientClinicalContext {
   heightCm?: number;
   /** Head circumference in centimetres when known. */
   headCircumferenceCm?: number;
+  /** Mid-upper arm circumference in centimetres when known. */
+  muacCm?: number;
+  /** Biological mother's adult height in centimetres for mid-parental target height. */
+  motherHeightCm?: number;
+  /** Biological father's adult height in centimetres for mid-parental target height. */
+  fatherHeightCm?: number;
   /** Gestational age at birth in completed weeks + days (total days) for neonates. */
   gestationalAgeDays?: number;
+  /** Longitudinal anthropometric visits for trajectory plotting on growth charts. */
+  growthSeries?: GrowthMeasurementPoint[];
   /** Recorded drug allergy keys (`UPPER_SNAKE_CASE` catalog/medication keys). */
   allergyKeys?: string[];
 }
@@ -500,13 +508,31 @@ export interface NeonatalTpnEvaluationResult {
 // -- Anthropometric Growth Z-Scores -------------------------------------------
 
 /**
- * Single anthropometric measurement point for WHO (0–19y) or Fenton (preterm)
- * growth evaluation.
+ * Display and export options for embedded growth-chart modules.
+ */
+export interface GrowthChartEmbedOptions {
+  /** Initial anthropometric measurement indicator key to select on load. */
+  initialMeasurement?: string;
+  /** Curve plotting scale (`centile` percentiles or `sd` z-score standard deviations). */
+  curveScale?: 'centile' | 'sd';
+  /** Preferred display unit system (`metric` or `imperial`). */
+  unitSystem?: 'metric' | 'imperial';
+  /** Simplified caregiver-friendly view with plain-language explanations. */
+  caregiverMode?: boolean;
+  /** Age axis mode for preterm infants (`corrected`, `chronological`, or `both`). */
+  ageMode?: 'corrected' | 'chronological' | 'both';
+  /** Enables printable/downloadable chart export controls when `true`. */
+  allowExports?: boolean;
+}
+
+/**
+ * Single anthropometric measurement point for growth chart evaluation and
+ * longitudinal trajectory plotting.
  */
 export interface GrowthMeasurementPoint {
-  /** ISO-8601 date or age in days at measurement. */
+  /** Chronological age in days at measurement. */
   ageDays: number;
-  /** Postmenstrual age in days for preterm infants evaluated on Fenton curves. */
+  /** Postmenstrual age in days for preterm infants evaluated on preterm curves. */
   postmenstrualAgeDays?: number;
   /** Weight in kilograms. */
   weightKg?: number;
@@ -516,6 +542,10 @@ export interface GrowthMeasurementPoint {
   headCircumferenceCm?: number;
   /** Mid-upper arm circumference in centimetres. */
   muacCm?: number;
+  /** ISO-8601 capture timestamp for longitudinal visit records. */
+  recordedAt?: string;
+  /** Optional clinical visit or measurement note. */
+  label?: string;
 }
 
 /**
@@ -524,8 +554,10 @@ export interface GrowthMeasurementPoint {
 export interface GrowthEvaluationInput {
   /** Biological sex (`MALE` or `FEMALE` required for LMS lookup). */
   sex: BiologicalSex;
-  /** Gestational age at birth in total days (triggers Fenton preterm curves when `<259` days). */
+  /** Gestational age at birth in total days (triggers preterm curves when `<259` days). */
   gestationalAgeDays?: number;
+  /** Optional specialized clinical reference profile. */
+  conditionProfile?: 'STANDARD' | 'PRETERM' | 'DOWN_SYNDROME' | 'TURNER_SYNDROME';
   /** One or more chronological measurements. */
   measurements: GrowthMeasurementPoint[];
 }
@@ -536,6 +568,14 @@ export interface GrowthEvaluationInput {
 export interface GrowthEvaluationResult {
   /** Growth reference standard selected (`WHO_CHILD_GROWTH` or `FENTON_PRETERM`). */
   standardUsed: 'WHO_CHILD_GROWTH' | 'FENTON_PRETERM';
+  /** Specific growth reference family applied when evaluating specialized curves. */
+  standardFamily?:
+    | 'WHO_CHILD_GROWTH'
+    | 'CDC_GROWTH'
+    | 'FENTON_PRETERM'
+    | 'INTERGROWTH_21'
+    | 'DOWN_SYNDROME'
+    | 'TURNER_SYNDROME';
   /** Per-indicator z-score results for the latest measurement. */
   indicators: Array<{
     indicator:
@@ -836,8 +876,8 @@ export interface ClinicalTransport {
   submitClinicalLearningAttempt(
     input: SubmitClinicalLearningAttemptInput,
   ): Promise<ClinicalLearningGradeReport>;
-  /** Lists WHO and CDC LMS growth chart standards bundled by the gateway. */
-  listGrowthStandards?(): Promise<GrowthStandardsMap>;
+  /** Lists WHO, CDC, preterm, and condition-specific LMS growth chart standards bundled by the gateway. */
+  listGrowthStandards?(keys?: readonly string[]): Promise<GrowthStandardsMap>;
   /** Lists structured presenting complaints for interactive clerking UIs. */
   listClerkingComplaints?(): Promise<ClerkingComplaintSummary[]>;
   /** Lists curated paediatric/neonatal medications for interactive dosing. */
